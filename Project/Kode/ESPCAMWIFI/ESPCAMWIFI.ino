@@ -22,7 +22,7 @@
 //#define CAMERA_MODEL_M5STACK_ESP32CAM // No PSRAM
 //#define CAMERA_MODEL_M5STACK_UNITCAM // No PSRAM
 //#define CAMERA_MODEL_M5STACK_CAMS3_UNIT  // Has PSRAM
-#define CAMERA_MODEL_AI_THINKER  // Has PSRAM
+#define CAMERA_MODEL_AI_THINKER // Has PSRAM
 //#define CAMERA_MODEL_TTGO_T_JOURNAL // No PSRAM
 //#define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
 // ** Espressif Internal Boards **
@@ -33,9 +33,17 @@
 //#define CAMERA_MODEL_DFRobot_Romeo_ESP32S3 // Has PSRAM
 #include "camera_pins.h"
 
-// Replace with your network credentials
-const char* ssid = "ESP32-Access-Point";
+// Create network credentials
+const char* ssid     = "ESP32-Access-Point";
 const char* password = "123456789";
+// ===========================
+// Enter your WiFi credentials
+// ===========================
+//const char *ssid = "Telenor0688rev";  // SSID til router hjemme hos Chr - Det er vigtigt at pointer identifikatoren sidder som *ssid og ikke * ssid
+//const char *password = "EgHbQPZ0Y";
+
+void startCameraServer();
+void setupLedFlash(int pin);
 
 // Set web server port number to 80
 WiFiServer server(80);
@@ -50,10 +58,17 @@ String output27State = "off";
 
 void setup() {
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
+  // Initialize the output variables as outputs
+  pinMode(builtInLEDPin, OUTPUT);
+  // Set outputs to LOW
+  digitalWrite(builtInLEDPin, LOW);
+  wifiSetup();
+  cameraSetup();
 
-  // Camera configuation, taken from CameraWebServer example for ESPCAM
+
+}
+
+void cameraSetup(){
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -114,7 +129,7 @@ void setup() {
     return;
   }
 
-  sensor_t* s = esp_camera_sensor_get();
+  sensor_t *s = esp_camera_sensor_get();
   // initial sensors are flipped vertically and colors are a bit saturated
   if (s->id.PID == OV3660_PID) {
     s->set_vflip(s, 1);        // flip it back
@@ -139,54 +154,34 @@ void setup() {
 #if defined(LED_GPIO_NUM)
   setupLedFlash(LED_GPIO_NUM);
 #endif
-
-  WiFi.begin(ssid, password);
-  WiFi.setSleep(false);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected");
-
-  startCameraServer();
-
-  Serial.print("Camera Ready! Use 'http://");
-  Serial.print(WiFi.localIP());
-  Serial.println("' to connect");
 }
 
+void wifiSetup(){
+  // Connect to Wi-Fi network with SSID and password
+  Serial.println("Setting AP (Access Point)…");
+  // Remove the password parameter, if you want the AP (Access Point) to be open
+  WiFi.softAP(ssid);//, password);
 
-// Initialize the output variables as outputs
-pinMode(builtInLEDPin, OUTPUT);
-// Set outputs to LOW
-digitalWrite(builtInLEDPin, LOW);
-
-// Connect to Wi-Fi network with SSID and password
-Serial.println("Setting AP (Access Point)…");
-// Remove the password parameter, if you want the AP (Access Point) to be open
-WiFi.softAP(ssid);  //, password);
-
-IPAddress IP = WiFi.softAPIP();
-Serial.print("AP IP address: ");
-Serial.println(IP);
-
-server.begin();
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
+  
+  server.begin();
 }
 
-void loop() {
-  WiFiClient client = server.available();  // Listen for incoming clients
+void wifiClient(){
 
-  if (client) {                     // If a new client connects,
-    Serial.println("New Client.");  // print a message out in the serial port
-    String currentLine = "";        // make a String to hold incoming data from the client
-    while (client.connected()) {    // loop while the client's connected
-      if (client.available()) {     // if there's bytes to read from the client,
-        char c = client.read();     // read a byte, then
-        Serial.write(c);            // print it out the serial monitor
+  WiFiClient client = server.available();   // Listen for incoming clients
+
+  if (client) {                             // If a new client connects,
+    Serial.println("New Client.");          // print a message out in the serial port
+    String currentLine = "";                // make a String to hold incoming data from the client
+    while (client.connected()) {            // loop while the client's connected
+      if (client.available()) {             // if there's bytes to read from the client,
+        char c = client.read();             // read a byte, then
+        Serial.write(c);                    // print it out the serial monitor
         header += c;
-        if (c == '\n') {  // if the byte is a newline character
+        if (c == '\n') {                    // if the byte is a newline character
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
           if (currentLine.length() == 0) {
@@ -196,7 +191,7 @@ void loop() {
             client.println("Content-type:text/html");
             client.println("Connection: close");
             client.println();
-
+            
             // turns the GPIOs on and off
             if (header.indexOf("GET /BUILTIN/on") >= 0) {
               Serial.println("GPIO 26 on");
@@ -215,45 +210,45 @@ void loop() {
               output27State = "off";
               digitalWrite(output27, LOW);
             }*/
-
+            
             // Display the HTML web page
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
-            // CSS to style the on/off buttons
+            // CSS to style the on/off buttons 
             // Feel free to change the background-color and font-size attributes to fit your preferences
             client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
             client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
             client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
             client.println(".button2 {background-color: #555555;}</style></head>");
-
+            
             // Web Page Heading
             client.println("<body><h1>ESP32 Web Server</h1>");
-
-            // Display current state, and ON/OFF buttons for GPIO 26
+            
+            // Display current state, and ON/OFF buttons for GPIO 26  
             client.println("<p>BUILTIN - State " + outputBuiltInLEDState + "</p>");
-            // If the outputBuiltInLEDState is off, it displays the ON button
-            if (outputBuiltInLEDState == "off") {
+            // If the outputBuiltInLEDState is off, it displays the ON button       
+            if (outputBuiltInLEDState=="off") {
               client.println("<p><a href=\"/BUILTIN/on\"><button class=\"button\">ON</button></a></p>");
             } else {
               client.println("<p><a href=\"/BUILTIN/off\"><button class=\"button button2\">OFF</button></a></p>");
-            }
-
-            // Display current state, and ON/OFF buttons for GPIO 27
+            } 
+               
+            // Display current state, and ON/OFF buttons for GPIO 27  
             client.println("<p>GPIO 27 - State " + output27State + "</p>");
-            // If the output27State is off, it displays the ON button
-            if (output27State == "off") {
+            // If the output27State is off, it displays the ON button       
+            if (output27State=="off") {
               client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
             } else {
               client.println("<p><a href=\"/27/off\"><button class=\"button button2\">OFF</button></a></p>");
             }
             client.println("</body></html>");
-
+            
             // The HTTP response ends with another blank line
             client.println();
             // Break out of the while loop
             break;
-          } else {  // if you got a newline, then clear currentLine
+          } else { // if you got a newline, then clear currentLine
             currentLine = "";
           }
         } else if (c != '\r') {  // if you got anything else but a carriage return character,
@@ -268,4 +263,8 @@ void loop() {
     Serial.println("Client disconnected.");
     Serial.println("");
   }
+}
+
+void loop(){
+  wifiClient();
 }
