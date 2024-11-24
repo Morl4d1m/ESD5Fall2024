@@ -57,7 +57,7 @@ void loop() {
   //Take and Save Photo
   takeSavePhoto();
   //pictureNumber++;
-  delay(500); //100 ms is tested and works in current iteration
+  delay(100); //100 ms is tested and works in current iteration
 }
 
 void configInitCamera(){
@@ -80,11 +80,11 @@ void configInitCamera(){
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_JPEG; //YUV422,GRAYSCALE,RGB565,JPEG
+  config.pixel_format = PIXFORMAT_RGB565; //YUV422,GRAYSCALE,RGB565,JPEG // MUST BE RGB565 TO NOT COMPRESS IMAGE
 
   // Select lower framesize if the camera doesn't support PSRAM
   if(psramFound()){
-    config.frame_size = FRAMESIZE_QQVGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+    config.frame_size = FRAMESIZE_QQVGA; // FRAMESIZE_ + QQVGA|QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
     config.jpeg_quality = 10; //10-63 lower number means higher quality
     config.fb_count = 2;
   } else {
@@ -101,7 +101,7 @@ void configInitCamera(){
   }
 
   sensor_t * s = esp_camera_sensor_get();
-  s->set_brightness(s, 2);     // -2 to 2
+  s->set_brightness(s, 0);     // -2 to 2
   s->set_contrast(s, 0);       // -2 to 2
   s->set_saturation(s, 0);     // -2 to 2
   s->set_special_effect(s, 2); // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
@@ -111,12 +111,12 @@ void configInitCamera(){
   s->set_exposure_ctrl(s, 1);  // 0 = disable , 1 = enable
   s->set_aec2(s, 0);           // 0 = disable , 1 = enable
   s->set_ae_level(s, 0);       // -2 to 2
-  s->set_aec_value(s, 300);    // 0 to 1200
+  s->set_aec_value(s, 0);    // 0 to 1200 Automatic exposure control
   s->set_gain_ctrl(s, 1);      // 0 = disable , 1 = enable
   s->set_agc_gain(s, 0);       // 0 to 30
   s->set_gainceiling(s, (gainceiling_t)0);  // 0 to 6
-  s->set_bpc(s, 0);            // 0 = disable , 1 = enable
-  s->set_wpc(s, 1);            // 0 = disable , 1 = enable
+  s->set_bpc(s, 0);            // 0 = disable , 1 = enable Black pixel correction
+  s->set_wpc(s, 1);            // 0 = disable , 1 = enable White pixel correction
   s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
   s->set_lenc(s, 1);           // 0 = disable , 1 = enable
   s->set_hmirror(s, 1);        // 0 = disable , 1 = enable
