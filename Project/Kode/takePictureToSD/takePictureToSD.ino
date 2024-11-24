@@ -3,13 +3,13 @@
   Complete project details at https://RandomNerdTutorials.com/esp32-cam-ov2640-camera-settings/
 *********/
 
-#include "esp_camera.h"
-#include "FS.h"                // SD Card ESP32
-#include "SD_MMC.h"            // SD Card ESP32
-#include "soc/soc.h"           // Disable brownout problems
-#include "soc/rtc_cntl_reg.h"  // Disable brownout problems
-#include "driver/rtc_io.h"
-#include <EEPROM.h>            // read and write from flash memory
+  #include "esp_camera.h"
+  #include "FS.h"                // SD Card ESP32
+  #include "SD_MMC.h"            // SD Card ESP32
+  #include "soc/soc.h"           // Disable brownout problems
+  #include "soc/rtc_cntl_reg.h"  // Disable brownout problems
+  #include "driver/rtc_io.h"
+  #include <EEPROM.h>            // read and write from flash memory
 
 #define EEPROM_SIZE 1
 
