@@ -2,7 +2,7 @@
 N = 35;                  % Filterlængde
 fs = 8000;              % Samplefrekvens i Hz
 frequencies = [0, 750, 1000, 1500, fs/2]; % Frekvenser i Hz
-gains_dB = [0, -1, -3, -10, -80];         % Gain i dB (krav)
+gains_dB = [0, -1, -3, -10, -40];         % Gain i dB (krav)
 
 % Konverter gain fra dB til lineær skala
 gains_linear = 10.^(gains_dB / 20);

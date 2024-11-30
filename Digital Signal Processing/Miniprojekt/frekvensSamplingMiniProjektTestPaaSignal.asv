@@ -1,0 +1,105 @@
+% Parametre til frekvenssamplingsfilter
+N = 35;                  % Filterlængde
+fs = 8000;              % Samplefrekvens i Hz
+frequencies = [0, 750, 1000, 1500, fs/2]; % Frekvenser i Hz
+gains_dB = [0, -1, -3, -10, -80];         % Gain i dB (krav)
+
+% Konverter gain fra dB til lineær skala
+gains_linear = 10.^(gains_dB / 20);
+
+% Normér frekvenserne til [0, 1] (Nyquist-normalisering)
+f_norm = frequencies / (fs / 2);
+
+% Design impulsresponsen med `fir2`
+h = fir2(N-1, f_norm, gains_linear);
+
+% Beregn frekvensrespons fra 0 til 2*pi (hele området)
+[H, omega] = freqz(h, 1, 1024, 'whole', fs);
+
+% Beregn frekvensrespons i dB
+H_dB = 20 * log10(abs(H));
+
+
+
+
+
+% Skab et grundsignal til test
+duration = 0.05; % Signalets varighed (sat meget småt for overskuelighedens skyld
+x_noisy = generateNoisySignal(fs, duration);
+
+% Benyt filteret på signalet
+y_filtered = conv(x_noisy, h, 'same'); % fold signalet med filteret uden at forlænge signalet
+
+% Plot langs tid
+t = (0:length(x_noisy)-1) / fs;
+
+% Time vector for smoother plotting with more points
+t_high_res = linspace(0, duration, length(x_noisy) * 5); % Forbedr opløsningen med MATLAB magi
+x_noisy_interp = interp1(t, x_noisy, t_high_res, 'spline'); % Interpoler med det støjende signal
+
+% Plot det støjende signal i høj opløsning
+subplot(3,1,1);
+plot(t_high_res, x_noisy_interp);
+title('Signal med grundfrekvens på 500 Hz forurenet med højfrekvent støj');
+xlabel('Tid (s)');
+ylabel('Amplitude');
+
+% Plot filtered signal with high-resolution time vector
+subplot(3,1,2);
+plot(t_high_res, y_filtered_interp);
+title('Filtered Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+% Filterets frekvensrespons
+fftSize = (1024);
+H_freq = fft(h, fftSize);
+f = (0:(fftSize-1)) * fs / fftSize;
+
+% Compute magnitude in dB
+h_freqDB = mag2db(abs(H_freq));
+
+subplot(3,1,3);
+plot(f, h_freqDB);
+title('Filterets Frekvensrespons i dB |H(f)|');
+xlabel('Frequency (Hz)');
+ylabel('|H(f)| in dB');
+xlim([0 fs/2]);
+grid on;
+
+figure;
+
+
+
+%Tyvstjålet fra gruppe 510
+% Helper function: Generate a noisy test signal with 100 Hz sine wave and high-frequency noise
+function x_noisy = generateNoisySignal(fs, duration)
+    % Parameters for the signal components
+    f_passband = 500;             % Clear signal frequency in the passband (e.g., 100 Hz)
+    amplitude_passband = 1;       % Amplitude of the passband component
+    
+    % Generate time vector based on duration and sampling frequency
+    t = 0:1/fs:duration;
+    
+    % Create passband component (clean 100 Hz sine wave)
+    signal_passband = amplitude_passband * sin(2 * pi * f_passband * t);
+    
+    % Generate high-frequency noise (frequencies above 1500 Hz)
+    high_freqs = [1500 1750 1900]; % Frequencies in the stopband
+    %noise = 0.3 * randn(size(t));  % Initialize with Gaussian noise
+    noise = 0;
+
+    for f_noise = high_freqs
+        noise = noise + 0.5 * sin(2 * pi * f_noise * t); % Add each high-frequency component
+    end
+    
+    % Combine the passband signal with the high-frequency noise
+    x_noisy = signal_passband + noise;
+    
+    % Plot the noisy signal for visualization
+    %figure;
+    %plot(t, x_noisy);
+    %title('Noisy Input Signal with High-Frequency Noise');
+    %xlabel('Time (s)');
+    %ylabel('Amplitude');
+end
