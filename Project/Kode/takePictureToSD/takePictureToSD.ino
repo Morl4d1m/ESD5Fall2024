@@ -1,8 +1,3 @@
-/*********
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-cam-ov2640-camera-settings/
-*********/
-
 #include "esp_camera.h"
 #include "FS.h"                // SD Card ESP32
 #include "SD_MMC.h"            // SD Card ESP32
@@ -80,7 +75,7 @@ void configInitCamera() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_RGB565;  //YUV422,GRAYSCALE,RGB565,JPEG // MUST BE RGB565 TO NOT COMPRESS IMAGE
+  //config.pixel_format = PIXFORMAT_RGB565;  //YUV422,GRAYSCALE,RGB565,JPEG // MUST BE RGB565 TO NOT COMPRESS IMAGE
 
   // Select lower framesize if the camera doesn't support PSRAM
   if (psramFound()) {
@@ -101,6 +96,7 @@ void configInitCamera() {
   }
 
   sensor_t *s = esp_camera_sensor_get();
+  s->set_pixformat(s, PIXFORMAT_GRAYSCALE);
   s->set_brightness(s, 0);                  // -2 to 2
   s->set_contrast(s, 0);                    // -2 to 2
   s->set_saturation(s, 0);                  // -2 to 2
