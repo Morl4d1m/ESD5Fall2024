@@ -75,7 +75,7 @@ void configInitCamera() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  //config.pixel_format = PIXFORMAT_RGB565;  //YUV422,GRAYSCALE,RGB565,JPEG // MUST BE RGB565 TO NOT COMPRESS IMAGE
+  config.pixel_format = PIXFORMAT_RGB565;  //YUV422,GRAYSCALE,RGB565,JPEG // MUST BE RGB565 TO NOT COMPRESS IMAGE
 
   // Select lower framesize if the camera doesn't support PSRAM
   if (psramFound()) {
@@ -96,7 +96,7 @@ void configInitCamera() {
   }
 
   sensor_t *s = esp_camera_sensor_get();
-  s->set_pixformat(s, PIXFORMAT_GRAYSCALE);
+  //s->set_pixformat(s, PIXFORMAT_GRAYSCALE); // Grayscale doesnt seem to work by initializing this either
   s->set_brightness(s, 0);                  // -2 to 2
   s->set_contrast(s, 0);                    // -2 to 2
   s->set_saturation(s, 0);                  // -2 to 2
