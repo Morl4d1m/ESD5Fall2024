@@ -6,7 +6,7 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *imageFileName = "/picture81.jpg";  // Path to your grayscale image on the SD card
+const char *imageFileName = "/picture44RGB.jpg";  // Path to your grayscale image on the SD card
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Disable brownout detector
@@ -44,6 +44,9 @@ void readGrayscaleImageFromSD(const char *fileName) {
   const int imgWidth = 160;
   const int imgHeight = 120;
 
+  uint8_t grayscaleMatrix[imgHeight][imgWidth];
+
+
   //Inspect header size - only used while debugging
   for (int i = 0; i < 100 && file.available(); i++) {
     Serial.print(file.read(), HEX);
@@ -77,7 +80,8 @@ void readGrayscaleImageFromSD(const char *fileName) {
         // Convert to grayscale
         uint8_t gray = (0.299 * r) + (0.587 * g) + (0.114 * b);
         Serial.print(gray);
-        Serial.print("\t");                                   // Tab for spacing
+        Serial.print("\t");  // Tab for spacing
+        grayscaleMatrix[y][x] = gray;
       } else if (file.available() && file.size() <= 20278) {  //The threshold of 20278 bytes matches the discrepancy between 256bit bitmaps and RGB565 formats
         uint8_t pixelVal = file.read();                       // Read one byte (grayscale value)
         Serial.print(pixelVal);
@@ -90,6 +94,16 @@ void readGrayscaleImageFromSD(const char *fileName) {
       }
     }
     Serial.println();  // New line after each row
+  }
+  delay(500);
+  //Serial.println(grayscaleMatrix[1][1]); //WHY DOES THIS NOT WORK
+
+  //Det her nedenunder virker
+  int x[2][4] = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 } };
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 4; j++) {
+      Serial.println(x[i][j]);
+    }
   }
 
   // Close the file

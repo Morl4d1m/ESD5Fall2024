@@ -52,7 +52,7 @@ void loop() {
   //Take and Save Photo
   takeSavePhoto();
   //pictureNumber++;
-  delay(500);  //100 ms is tested and works in current iteration
+  delay(5000);  //100 ms is tested and works in current iteration
 }
 
 void configInitCamera() {
@@ -76,6 +76,8 @@ void configInitCamera() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_RGB565;  //YUV422,GRAYSCALE,RGB565,JPEG // MUST BE RGB565 TO NOT COMPRESS IMAGE
+  config.fb_count = 2;       //Must be 2 to always get the newest image
+  config.grab_mode = CAMERA_GRAB_LATEST; // Must be set to grab latest image and not a previous one - solved using https://github.com/espressif/arduino-esp32/issues/6047
 
   // Select lower framesize if the camera doesn't support PSRAM
   if (psramFound()) {
@@ -100,7 +102,7 @@ void configInitCamera() {
   s->set_brightness(s, 0);                  // -2 to 2
   s->set_contrast(s, 0);                    // -2 to 2
   s->set_saturation(s, 0);                  // -2 to 2
-  s->set_special_effect(s, 2);              // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
+  s->set_special_effect(s, 0);              // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
   s->set_whitebal(s, 1);                    // 0 = disable , 1 = enable
   s->set_awb_gain(s, 1);                    // 0 = disable , 1 = enable
   s->set_wb_mode(s, 0);                     // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
@@ -124,6 +126,7 @@ void configInitCamera() {
 void initMicroSDCard() {
   // Start Micro SD card
   Serial.println("Starting SD Card");
+  SD_MMC.begin("/sdcard", true); // Necessary to disable flash
   if (!SD_MMC.begin()) {
     Serial.println("SD Card Mount Failed");
     return;
