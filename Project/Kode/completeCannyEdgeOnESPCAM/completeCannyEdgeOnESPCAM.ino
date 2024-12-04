@@ -6,11 +6,15 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *imageFileName = "/picture81TeaMug.jpg";  // Path to your grayscale image on the SD card
+const char *imageFileName = "/picture81.jpg";  // Path to your grayscale image on the SD card
 
 // Example image dimensions
 const int imgWidth = 160;
 const int imgHeight = 120;
+
+// Add mirrored padding to remove noisy border
+const int paddedHeight = imgHeight + 2;
+const int paddedWidth = imgWidth + 2;
 
 
 
@@ -50,7 +54,7 @@ void setup() {
   }
   Serial.println("Memory allocated for column pointers.");
 
-   //Repeated for gaussBlurMatrix
+  //Repeated for gaussBlurMatrix
   uint8_t **gaussBlurMatrix;
   gaussBlurMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
 
@@ -134,14 +138,17 @@ void setup() {
   }
   Serial.println("Memory allocated for column pointers.");
 
+  Serial.println("Begin");
+
   // Read and display the grayscale image
   readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);
   //displayMatrix(grayscaleMatrix);
-  gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);
-  verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);
-  horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);
-  imageProcessingDone(grayscaleMatrix, vSobelMatrix, hSobelMatrix, processedMatrix);
-  displayMatrix(processedMatrix);
+  //gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);
+  //verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);
+  //horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);
+  //imageProcessingDone(grayscaleMatrix, vSobelMatrix, hSobelMatrix, processedMatrix);
+  Serial.println("End");
+  displayMatrix(grayscaleMatrix);
 }
 
 void loop() {
@@ -156,9 +163,7 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
     return;
   }
 
-  Serial.println("Reading grayscale image...");
-
-
+  /*Serial.println("Reading grayscale image...");
 
   //Inspect header size - only used while debugging
   for (int i = 0; i < 100 && file.available(); i++) {
@@ -169,7 +174,7 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
   Serial.println("The above is header information.");
   Serial.println();
   Serial.println(file.size());  // Prints the size in bytes, 38400 matches an RGB565 of 160x120 pixels
-  Serial.println();
+  Serial.println();*/
 
   // Header size in bytes (adjust if needed)
   const int pixelDataOffset = 0;  // Offset to pixel data //1078 is used for bitmaps created with paint //0 is used for RGB565
@@ -178,12 +183,12 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
   int errorLine = imgHeight;  // Used for debugging serial output of image data
 
   // Buffer for bulk reading (adjust size as needed)
-  const int bufferSize = 1024;
-  uint8_t buffer[bufferSize];  // Allocate a uint16_t buffer
-  int bufferIndex = 0;         // Index for accessing the buffer
+  const int bufferSize = 1024;  // Tried with 2048 as well, with no sign of improved runtime for QQVGA images
+  uint8_t buffer[bufferSize];   // Allocate a uint8_t buffer
+  int bufferIndex = 0;          // Index for accessing the buffer
   size_t bytesRead = 0;
 
-  Serial.println("Begin");
+  //Serial.println("Begin");
   // Read the pixel values row by row
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
@@ -225,45 +230,28 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
     }
     //Serial.println();  // New line after each row
   }
-  Serial.println("End");
+  //Serial.println("End");
   //delay(500);
   //Serial.println(grayscaleMatrix[118][159]); // Remember that it is Y,X and not X,Y
 
-  //Det her nedenunder virker
-  /*int x[2][4] = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 } };
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 4; j++) {
-      Serial.println(x[i][j]);
-    }
-  }*/
-
   // Close the file
   file.close();
-  Serial.println("Finished reading image.");
+  //Serial.println("Finished reading image.");
 }
 
 void displayMatrix(uint8_t **grayscaleMatrix) {
-  // Create a buffer to hold the entire image data as a string
-  String imageString = "";
-
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      imageString += String(grayscaleMatrix[y][x]) + "\t";  // Append each value with a tab
+      Serial.print(grayscaleMatrix[y][x]);  // Print each value
+      Serial.print("\t");                   // Tab-separated
     }
-    imageString += "\n";  // New line after each row
+    Serial.println();  // New line after each row
   }
-
-  // Print the entire matrix at once
-  Serial.print(imageString);
   Serial.println("Matrix printed.");
 }
 
 void gaussBlurOperator(uint8_t **grayscaleMatrix, uint8_t **gaussBlurMatrix) {
-  int gaussBlur[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
-
-  // Add mirrored padding
-  int paddedHeight = imgHeight + 2;
-  int paddedWidth = imgWidth + 2;
+  int gaussBlur[3][3] = { { 1, 2, 1 }, { 2, 6, 2 }, { 1, 2, 1 } };
 
   // Allocate padded matrix
   uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
@@ -310,10 +298,19 @@ void gaussBlurOperator(uint8_t **grayscaleMatrix, uint8_t **gaussBlurMatrix) {
 void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
   int vSobel[3][3] = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
 
-  // Temporary matrix to store the result
-  uint8_t **tempMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));
-  for (int i = 0; i < imgHeight; i++) {
-    tempMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+  // Allocate padded matrix
+  uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
+  for (int i = 0; i < paddedHeight; i++) {
+    paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
+  }
+
+  // Fill padded matrix with mirrored values
+  for (int y = 0; y < paddedHeight; y++) {
+    for (int x = 0; x < paddedWidth; x++) {
+      int srcY = min(max(y - 1, 0), imgHeight - 1);
+      int srcX = min(max(x - 1, 0), imgWidth - 1);
+      paddedMatrix[y][x] = gaussBlurMatrix[srcY][srcX];
+    }
   }
 
   for (int y = 1; y < imgHeight - 1; y++) {
@@ -331,27 +328,37 @@ void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
       sobelOperated = max(0, min(255, sobelOperated));
 
       // Store in the temporary matrix
-      tempMatrix[y][x] = (uint8_t)sobelOperated;
+      paddedMatrix[y][x] = (uint8_t)sobelOperated;
     }
   }
+
 
   // Copy the results to the original matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      vSobelMatrix[y][x] = tempMatrix[y][x];
+      vSobelMatrix[y][x] = paddedMatrix[y][x];
     }
-    free(tempMatrix[y]);
+    free(paddedMatrix[y]);
   }
-  free(tempMatrix);
+  free(paddedMatrix);
 }
 
 void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) {
   int hSobel[3][3] = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
 
-  // Temporary matrix to store the result
-  uint8_t **tempMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));
-  for (int i = 0; i < imgHeight; i++) {
-    tempMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+  // Allocate padded matrix
+  uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
+  for (int i = 0; i < paddedHeight; i++) {
+    paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
+  }
+
+  // Fill padded matrix with mirrored values
+  for (int y = 0; y < paddedHeight; y++) {
+    for (int x = 0; x < paddedWidth; x++) {
+      int srcY = min(max(y - 1, 0), imgHeight - 1);
+      int srcX = min(max(x - 1, 0), imgWidth - 1);
+      paddedMatrix[y][x] = gaussBlurMatrix[srcY][srcX];
+    }
   }
 
   for (int y = 1; y < imgHeight - 1; y++) {
@@ -369,25 +376,25 @@ void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) 
       sobelOperated = max(0, min(255, sobelOperated));
 
       // Store in the temporary matrix
-      tempMatrix[y][x] = (uint8_t)sobelOperated;
+      paddedMatrix[y][x] = (uint8_t)sobelOperated;
     }
   }
 
   // Copy the results to the original matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      hSobelMatrix[y][x] = tempMatrix[y][x];
+      hSobelMatrix[y][x] = paddedMatrix[y][x];
     }
-    free(tempMatrix[y]);
+    free(paddedMatrix[y]);
   }
-  free(tempMatrix);
+  free(paddedMatrix);
 }
 
 void imageProcessingDone(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint8_t **hSobelMatrix, uint8_t **processedMatrix) {
   // Copy the results from previous operations to a final matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      processedMatrix[y][x] = vSobelMatrix[y][x]+hSobelMatrix[y][x];
+      processedMatrix[y][x] = vSobelMatrix[y][x] + hSobelMatrix[y][x];
     }
   }
 }

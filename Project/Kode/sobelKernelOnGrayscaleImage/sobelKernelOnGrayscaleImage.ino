@@ -220,18 +220,13 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
 }
 
 void displayMatrix(uint8_t **grayscaleMatrix) {
-  // Create a buffer to hold the entire image data as a string
-  String imageString = "";
-
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      imageString += String(grayscaleMatrix[y][x]) + "\t";  // Append each value with a tab
+      Serial.print(grayscaleMatrix[y][x]);  // Print each value
+      Serial.print("\t");                   // Tab-separated
     }
-    imageString += "\n";  // New line after each row
+    Serial.println();  // New line after each row
   }
-
-  // Print the entire matrix at once
-  Serial.print(imageString);
   Serial.println("Matrix printed.");
 }
 
@@ -315,7 +310,7 @@ void imageProcessingDone(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint
   // Copy the results from previous operations to a final matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      processedMatrix[y][x] = vSobelMatrix[y][x]+hSobelMatrix[y][x];
+      processedMatrix[y][x] = vSobelMatrix[y][x] + hSobelMatrix[y][x];
     }
   }
 }

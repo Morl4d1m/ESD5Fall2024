@@ -6,13 +6,11 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *imageFileName = "/picture44RGB.jpg";  // Path to your grayscale image on the SD card
+const char *imageFileName = "/picture81.jpg";  // Path to your grayscale image on the SD card
 
 // Example image dimensions
 const int imgWidth = 160;
 const int imgHeight = 120;
-
-
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Disable brownout detector
@@ -75,7 +73,7 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
   Serial.println();
   Serial.println("The above is header information.");
   Serial.println();
-  Serial.println(file.size()); // Prints the size in bytes, 38400 matches an RGB565 of 160x120 pixels
+  Serial.println(file.size());  // Prints the size in bytes, 38400 matches an RGB565 of 160x120 pixels
   Serial.println();
 
   // Header size in bytes (adjust if needed)
@@ -87,7 +85,7 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
   // Buffer for bulk reading (adjust size as needed)
   const int bufferSize = 1024;
   uint8_t buffer[bufferSize];  // Allocate a uint16_t buffer
-  int bufferIndex = 0;          // Index for accessing the buffer
+  int bufferIndex = 0;         // Index for accessing the buffer
   size_t bytesRead = 0;
 
   Serial.println("Begin");
@@ -150,17 +148,12 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
 }
 
 void displayMatrix(uint8_t **grayscaleMatrix) {
-    // Create a buffer to hold the entire image data as a string
-    String imageString = "";
-
-    for (int y = 0; y < imgHeight; y++) {
-        for (int x = 0; x < imgWidth; x++) {
-            imageString += String(grayscaleMatrix[y][x]) + "\t";  // Append each value with a tab
-        }
-        imageString += "\n";  // New line after each row
+  for (int y = 0; y < imgHeight; y++) {
+    for (int x = 0; x < imgWidth; x++) {
+      Serial.print(grayscaleMatrix[y][x]);  // Print each value
+      Serial.print("\t");                   // Tab-separated
     }
-
-    // Print the entire matrix at once
-    Serial.print(imageString);
-    Serial.println("Matrix printed.");
+    Serial.println();  // New line after each row
+  }
+  Serial.println("Matrix printed.");
 }
