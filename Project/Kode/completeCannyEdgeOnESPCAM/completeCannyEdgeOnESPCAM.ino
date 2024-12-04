@@ -259,42 +259,52 @@ void displayMatrix(uint8_t **grayscaleMatrix) {
 }
 
 void gaussBlurOperator(uint8_t **grayscaleMatrix, uint8_t **gaussBlurMatrix) {
-  int gaussBlur[3][3] = { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } };
+  int gaussBlur[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
 
-  // Temporary matrix to store the result
-  uint8_t **tempMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));
-  for (int i = 0; i < imgHeight; i++) {
-    tempMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+  // Add mirrored padding
+  int paddedHeight = imgHeight + 2;
+  int paddedWidth = imgWidth + 2;
+
+  // Allocate padded matrix
+  uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
+  for (int i = 0; i < paddedHeight; i++) {
+    paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
   }
 
-  for (int y = 1; y < imgHeight - 1; y++) {
-    for (int x = 1; x < imgWidth - 1; x++) {
+  // Fill padded matrix with mirrored values
+  for (int y = 0; y < paddedHeight; y++) {
+    for (int x = 0; x < paddedWidth; x++) {
+      int srcY = min(max(y - 1, 0), imgHeight - 1);
+      int srcX = min(max(x - 1, 0), imgWidth - 1);
+      paddedMatrix[y][x] = grayscaleMatrix[srcY][srcX];
+    }
+  }
+
+  // Apply Gaussian blur to the padded matrix
+  for (int y = 1; y < paddedHeight - 1; y++) {
+    for (int x = 1; x < paddedWidth - 1; x++) {
       int gaussBlurred = 0;
 
-      // Apply Sobel kernel
       for (int ky = -1; ky <= 1; ky++) {
         for (int kx = -1; kx <= 1; kx++) {
-          gaussBlurred += grayscaleMatrix[y + ky][x + kx] * gaussBlur[ky + 1][kx + 1];
+          gaussBlurred += paddedMatrix[y + ky][x + kx] * gaussBlur[ky + 1][kx + 1];
         }
       }
 
-      // Normalize and clamp the value to [0, 255]
-      gaussBlurred/=16;
+      // Normalize and clamp to [0, 255]
+      gaussBlurred /= 16;
       gaussBlurred = max(0, min(255, gaussBlurred));
 
-      // Store in the temporary matrix
-      tempMatrix[y][x] = (uint8_t)gaussBlurred;
+      // Write to the output matrix (adjust for offset)
+      gaussBlurMatrix[y - 1][x - 1] = (uint8_t)gaussBlurred;
     }
   }
 
-  // Copy the results to the original matrix
-  for (int y = 0; y < imgHeight; y++) {
-    for (int x = 0; x < imgWidth; x++) {
-      gaussBlurMatrix[y][x] = tempMatrix[y][x];
-    }
-    free(tempMatrix[y]);
+  // Free padded matrix
+  for (int i = 0; i < paddedHeight; i++) {
+    free(paddedMatrix[i]);
   }
-  free(tempMatrix);
+  free(paddedMatrix);
 }
 
 void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
