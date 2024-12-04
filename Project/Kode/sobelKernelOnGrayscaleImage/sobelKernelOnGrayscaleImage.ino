@@ -48,11 +48,77 @@ void setup() {
     }
   }
   Serial.println("Memory allocated for column pointers.");
+
+  //Repeated for vSobelMatrix
+  uint8_t **vSobelMatrix;
+  vSobelMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
+
+  if (vSobelMatrix == NULL) {  // Check if the memory has been allocated
+    Serial.println("Not enough memory!");
+    return;
+  } else {
+    Serial.println("Memory allocated for row pointers.");
+  }
+
+  // Allocate memory for each row (160 elements per row)
+  for (int i = 0; i < imgHeight; i++) {
+    vSobelMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+    if (vSobelMatrix[i] == NULL) {
+      Serial.println("Not enough memory for row!");
+      return;
+    }
+  }
+  Serial.println("Memory allocated for column pointers.");
+
+  //Repeated for hSobelMatrix
+  uint8_t **hSobelMatrix;
+  hSobelMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
+
+  if (hSobelMatrix == NULL) {  // Check if the memory has been allocated
+    Serial.println("Not enough memory!");
+    return;
+  } else {
+    Serial.println("Memory allocated for row pointers.");
+  }
+
+  // Allocate memory for each row (160 elements per row)
+  for (int i = 0; i < imgHeight; i++) {
+    hSobelMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+    if (hSobelMatrix[i] == NULL) {
+      Serial.println("Not enough memory for row!");
+      return;
+    }
+  }
+  Serial.println("Memory allocated for column pointers.");
+
+  //Repeated for processedMatrix
+  uint8_t **processedMatrix;
+  processedMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
+
+  if (processedMatrix == NULL) {  // Check if the memory has been allocated
+    Serial.println("Not enough memory!");
+    return;
+  } else {
+    Serial.println("Memory allocated for row pointers.");
+  }
+
+  // Allocate memory for each row (160 elements per row)
+  for (int i = 0; i < imgHeight; i++) {
+    processedMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+    if (processedMatrix[i] == NULL) {
+      Serial.println("Not enough memory for row!");
+      return;
+    }
+  }
+  Serial.println("Memory allocated for column pointers.");
+
   // Read and display the grayscale image
   readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);
-  displayMatrix(grayscaleMatrix);
-  verticalSobelOperator(grayscaleMatrix);
-  displayMatrix(grayscaleMatrix);
+  //displayMatrix(grayscaleMatrix);
+  verticalSobelOperator(grayscaleMatrix, vSobelMatrix);
+  horizontalSobelOperator(grayscaleMatrix, hSobelMatrix);
+  imageProcessingDone(grayscaleMatrix, vSobelMatrix, hSobelMatrix, processedMatrix);
+  displayMatrix(processedMatrix);
 }
 
 void loop() {
@@ -169,7 +235,7 @@ void displayMatrix(uint8_t **grayscaleMatrix) {
   Serial.println("Matrix printed.");
 }
 
-void verticalSobelOperator(uint8_t **grayscaleMatrix) {
+void verticalSobelOperator(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix) {
   int vSobel[3][3] = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
 
   // Temporary matrix to store the result
@@ -197,12 +263,59 @@ void verticalSobelOperator(uint8_t **grayscaleMatrix) {
     }
   }
 
-  // Copy back the results to the original matrix
+  // Copy the results to the original matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      grayscaleMatrix[y][x] = tempMatrix[y][x];
+      vSobelMatrix[y][x] = tempMatrix[y][x];
     }
     free(tempMatrix[y]);
   }
   free(tempMatrix);
+}
+
+void horizontalSobelOperator(uint8_t **grayscaleMatrix, uint8_t **hSobelMatrix) {
+  int hSobel[3][3] = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
+
+  // Temporary matrix to store the result
+  uint8_t **tempMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));
+  for (int i = 0; i < imgHeight; i++) {
+    tempMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+  }
+
+  for (int y = 1; y < imgHeight - 1; y++) {
+    for (int x = 1; x < imgWidth - 1; x++) {
+      int sobelOperated = 0;
+
+      // Apply Sobel kernel
+      for (int ky = -1; ky <= 1; ky++) {
+        for (int kx = -1; kx <= 1; kx++) {
+          sobelOperated += grayscaleMatrix[y + ky][x + kx] * hSobel[ky + 1][kx + 1];
+        }
+      }
+
+      // Clamp the value to [0, 255]
+      sobelOperated = max(0, min(255, sobelOperated));
+
+      // Store in the temporary matrix
+      tempMatrix[y][x] = (uint8_t)sobelOperated;
+    }
+  }
+
+  // Copy the results to the original matrix
+  for (int y = 0; y < imgHeight; y++) {
+    for (int x = 0; x < imgWidth; x++) {
+      hSobelMatrix[y][x] = tempMatrix[y][x];
+    }
+    free(tempMatrix[y]);
+  }
+  free(tempMatrix);
+}
+
+void imageProcessingDone(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint8_t **hSobelMatrix, uint8_t **processedMatrix) {
+  // Copy the results from previous operations to a final matrix
+  for (int y = 0; y < imgHeight; y++) {
+    for (int x = 0; x < imgWidth; x++) {
+      processedMatrix[y][x] = vSobelMatrix[y][x]+hSobelMatrix[y][x];
+    }
+  }
 }
