@@ -84,25 +84,42 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
 
   int errorLine = imgHeight;  // Used for debugging serial output of image data
 
+  // Buffer for bulk reading (adjust size as needed)
+  const int bufferSize = 1024;
+  uint8_t buffer[bufferSize];  // Allocate a uint16_t buffer
+  int bufferIndex = 0;          // Index for accessing the buffer
+  size_t bytesRead = 0;
+
+  Serial.println("Begin");
   // Read the pixel values row by row
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      if (file.available() && file.size() > 20278) {
-        uint8_t byte1 = file.read();
-        uint8_t byte2 = file.read();
-        uint16_t pixel = (byte1 << 8) | byte2;  // RGB565 format
+      // Refill the buffer if necessary
+      if (bufferIndex >= bytesRead) {
+        bytesRead = file.read(buffer, bufferSize);  // Read a chunk of data
+        bufferIndex = 0;
+        if (bytesRead == 0) {
+          Serial.println("Error: Unexpected end of file.");
+          return;
+        }
+      }
 
-        // Extract RGB components
-        uint8_t r = ((pixel >> 11) & 0x1F) * 255 / 31;
-        uint8_t g = ((pixel >> 5) & 0x3F) * 255 / 63;
-        uint8_t b = (pixel & 0x1F) * 255 / 31;
+      // Read two bytes for RGB565
+      uint8_t byte1 = buffer[bufferIndex++];
+      uint8_t byte2 = buffer[bufferIndex++];
+      uint16_t pixel = (byte1 << 8) | byte2;  // RGB565 format
 
-        // Convert to grayscale
-        uint8_t gray = (0.299 * r) + (0.587 * g) + (0.114 * b);
-        //Serial.print(gray);
-        //Serial.print("\t");                                   // Tab for spacing
-        grayscaleMatrix[y][x] = gray;                         // Store grayscale value in the matrix
-      } else if (file.available() && file.size() <= 20278) {  //The threshold of 20278 bytes matches the discrepancy between 256bit bitmaps and RGB565 formats
+      // Extract RGB components
+      uint8_t r = ((pixel >> 11) & 0x1F) * 255 / 31;
+      uint8_t g = ((pixel >> 5) & 0x3F) * 255 / 63;
+      uint8_t b = (pixel & 0x1F) * 255 / 31;
+
+      // Convert to grayscale
+      uint8_t gray = (0.299 * r) + (0.587 * g) + (0.114 * b);
+      //Serial.print(gray);
+      //Serial.print("\t");                                   // Tab for spacing
+      grayscaleMatrix[y][x] = gray;  // Store grayscale value in the matrix
+      /*} else if (file.available() && file.size() <= 20278) {  //The threshold of 20278 bytes matches the discrepancy between 256bit bitmaps and RGB565 formats
         uint8_t pixelVal = file.read();                       // Read one byte (grayscale value)
         Serial.print(pixelVal);
         Serial.print("\t");  // Tab for spacing
@@ -111,12 +128,13 @@ void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
         errorLine--;
         Serial.println(errorLine);
         break;
-      }
+      }*/
     }
     //Serial.println();  // New line after each row
   }
-  delay(500);
-  Serial.println(grayscaleMatrix[118][159]); // Remember that it is Y,X and not X,Y
+  Serial.println("End");
+  //delay(500);
+  //Serial.println(grayscaleMatrix[118][159]); // Remember that it is Y,X and not X,Y
 
   //Det her nedenunder virker
   /*int x[2][4] = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 } };
