@@ -6,7 +6,7 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *imageFileName = "/picture81TeaMug.jpg";  // Path to your grayscale image on the SD card
+const char *imageFileName = "/picture88.jpg";  // Path to your grayscale image on the SD card
 
 // Example image dimensions
 const int imgWidth = 160;
@@ -163,24 +163,24 @@ void setup() {
 
   // Read and display the grayscale image
   readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
-  displayMatrix(grayscaleMatrix);
-  Serial.println("Grayscale");
+  //displayMatrix(grayscaleMatrix);
+  //Serial.println("Grayscale");
   gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);                                // Gaussian blurring
-  displayMatrix(gaussBlurMatrix);
-  Serial.println("Gauss");
+  //displayMatrix(gaussBlurMatrix);
+  //Serial.println("Gauss");
   verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);                               // Vertital sobel operation
-  displayMatrix(vSobelMatrix);
-  Serial.println("vSobel");
+  //displayMatrix(vSobelMatrix);
+  //Serial.println("vSobel");
   horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);                             // Horizontal sobel operation
-  displayMatrix(hSobelMatrix);
-  Serial.println("hSobel");
+  //displayMatrix(hSobelMatrix);
+  //Serial.println("hSobel");
   sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);              // Sum sobel operator into 1 image
-  applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 50, 150);  // Perform edge detection
-  Serial.println("sumSobel");
+  applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection
+  //Serial.println("sumSobel");
 
   Serial.println("End");
 
-  displayMatrix(sumSobelMatrix);
+  //displayMatrix(sumSobelMatrix);
   Serial.println();
   // Display the edge-detected matrix
   displayMatrix(edgeMatrix);
