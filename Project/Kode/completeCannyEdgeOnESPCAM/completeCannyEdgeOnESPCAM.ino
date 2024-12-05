@@ -143,12 +143,12 @@ void setup() {
   // Read and display the grayscale image
   readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);
   //displayMatrix(grayscaleMatrix);
-  //gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);
-  //verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);
-  //horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);
-  //imageProcessingDone(grayscaleMatrix, vSobelMatrix, hSobelMatrix, processedMatrix);
+  gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);
+  verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);
+  horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);
+  imageProcessingDone(grayscaleMatrix, vSobelMatrix, hSobelMatrix, processedMatrix);
   Serial.println("End");
-  displayMatrix(grayscaleMatrix);
+  displayMatrix(processedMatrix);
 }
 
 void loop() {
@@ -394,7 +394,7 @@ void imageProcessingDone(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint
   // Copy the results from previous operations to a final matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      processedMatrix[y][x] = vSobelMatrix[y][x] + hSobelMatrix[y][x];
+      processedMatrix[y][x] = max(0, min(255,vSobelMatrix[y][x] + hSobelMatrix[y][x]));
     }
   }
 }
