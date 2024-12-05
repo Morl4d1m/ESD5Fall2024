@@ -6,7 +6,7 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *imageFileName = "/picture81.jpg";  // Path to your grayscale image on the SD card
+const char *imageFileName = "/picture67.jpg";  // Path to your grayscale image on the SD card
 
 // Example image dimensions
 const int imgWidth = 160;
@@ -36,7 +36,6 @@ void setup() {
   } else {
     Serial.println("Memory allocated for row pointers.");
   }
-
   // Allocate memory for each row (160 elements per row)
   for (int i = 0; i < imgHeight; i++) {
     grayscaleMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));

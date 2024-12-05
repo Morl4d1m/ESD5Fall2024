@@ -6,7 +6,7 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *imageFileName = "/picture81.jpg";  // Path to your grayscale image on the SD card
+const char *imageFileName = "/picture81TeaMug.jpg";  // Path to your grayscale image on the SD card
 
 // Example image dimensions
 const int imgWidth = 160;
@@ -117,11 +117,11 @@ void setup() {
   }
   Serial.println("Memory allocated for column pointers.");
 
-  //Repeated for processedMatrix
-  uint8_t **processedMatrix;
-  processedMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
+  //Repeated for sumSobelMatrix
+  uint8_t **sumSobelMatrix;
+  sumSobelMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
 
-  if (processedMatrix == NULL) {  // Check if the memory has been allocated
+  if (sumSobelMatrix == NULL) {  // Check if the memory has been allocated
     Serial.println("Not enough memory!");
     return;
   } else {
@@ -130,8 +130,29 @@ void setup() {
 
   // Allocate memory for each row (160 elements per row)
   for (int i = 0; i < imgHeight; i++) {
-    processedMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
-    if (processedMatrix[i] == NULL) {
+    sumSobelMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+    if (sumSobelMatrix[i] == NULL) {
+      Serial.println("Not enough memory for row!");
+      return;
+    }
+  }
+  Serial.println("Memory allocated for column pointers.");
+
+  //Repeated for edgeMatrix
+  uint8_t **edgeMatrix;
+  edgeMatrix = (uint8_t **)malloc(imgHeight * sizeof(uint8_t *));  // Allocate memory for 120 rows
+
+  if (edgeMatrix == NULL) {  // Check if the memory has been allocated
+    Serial.println("Not enough memory!");
+    return;
+  } else {
+    Serial.println("Memory allocated for row pointers.");
+  }
+
+  // Allocate memory for each row (160 elements per row)
+  for (int i = 0; i < imgHeight; i++) {
+    edgeMatrix[i] = (uint8_t *)malloc(imgWidth * sizeof(uint8_t));
+    if (edgeMatrix[i] == NULL) {
       Serial.println("Not enough memory for row!");
       return;
     }
@@ -141,14 +162,28 @@ void setup() {
   Serial.println("Begin");
 
   // Read and display the grayscale image
-  readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);
-  //displayMatrix(grayscaleMatrix);
-  gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);
-  verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);
-  horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);
-  imageProcessingDone(grayscaleMatrix, vSobelMatrix, hSobelMatrix, processedMatrix);
+  readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
+  displayMatrix(grayscaleMatrix);
+  Serial.println("Grayscale");
+  gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);                                // Gaussian blurring
+  displayMatrix(gaussBlurMatrix);
+  Serial.println("Gauss");
+  verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);                               // Vertital sobel operation
+  displayMatrix(vSobelMatrix);
+  Serial.println("vSobel");
+  horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);                             // Horizontal sobel operation
+  displayMatrix(hSobelMatrix);
+  Serial.println("hSobel");
+  sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);              // Sum sobel operator into 1 image
+  applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 50, 150);  // Perform edge detection
+  Serial.println("sumSobel");
+
   Serial.println("End");
-  displayMatrix(processedMatrix);
+
+  displayMatrix(sumSobelMatrix);
+  Serial.println();
+  // Display the edge-detected matrix
+  displayMatrix(edgeMatrix);
 }
 
 void loop() {
@@ -251,7 +286,7 @@ void displayMatrix(uint8_t **grayscaleMatrix) {
 }
 
 void gaussBlurOperator(uint8_t **grayscaleMatrix, uint8_t **gaussBlurMatrix) {
-  int gaussBlur[3][3] = { { 1, 2, 1 }, { 2, 6, 2 }, { 1, 2, 1 } };
+  int gaussBlur[3][3] = { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } };
 
   // Allocate padded matrix
   uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
@@ -303,7 +338,7 @@ void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
   for (int i = 0; i < paddedHeight; i++) {
     paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
   }
-
+/*
   // Fill padded matrix with mirrored values
   for (int y = 0; y < paddedHeight; y++) {
     for (int x = 0; x < paddedWidth; x++) {
@@ -312,7 +347,7 @@ void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
       paddedMatrix[y][x] = gaussBlurMatrix[srcY][srcX];
     }
   }
-
+*/
   for (int y = 1; y < imgHeight - 1; y++) {
     for (int x = 1; x < imgWidth - 1; x++) {
       int sobelOperated = 0;
@@ -325,6 +360,7 @@ void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
       }
 
       // Clamp the value to [0, 255]
+      sobelOperated = abs(sobelOperated);
       sobelOperated = max(0, min(255, sobelOperated));
 
       // Store in the temporary matrix
@@ -344,14 +380,14 @@ void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
 }
 
 void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) {
-  int hSobel[3][3] = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
+  int hSobel[3][3] = { { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 } };
 
   // Allocate padded matrix
   uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
   for (int i = 0; i < paddedHeight; i++) {
     paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
   }
-
+/*
   // Fill padded matrix with mirrored values
   for (int y = 0; y < paddedHeight; y++) {
     for (int x = 0; x < paddedWidth; x++) {
@@ -360,7 +396,7 @@ void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) 
       paddedMatrix[y][x] = gaussBlurMatrix[srcY][srcX];
     }
   }
-
+*/
   for (int y = 1; y < imgHeight - 1; y++) {
     for (int x = 1; x < imgWidth - 1; x++) {
       int sobelOperated = 0;
@@ -373,6 +409,7 @@ void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) 
       }
 
       // Clamp the value to [0, 255]
+      sobelOperated = abs(sobelOperated);
       sobelOperated = max(0, min(255, sobelOperated));
 
       // Store in the temporary matrix
@@ -390,11 +427,44 @@ void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) 
   free(paddedMatrix);
 }
 
-void imageProcessingDone(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint8_t **hSobelMatrix, uint8_t **processedMatrix) {
+void applyDoubleThresholding(uint8_t **inputMatrix, uint8_t **outputMatrix, int width, int height, int lowThreshold, int highThreshold) {
+  // Initialize the output matrix
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      outputMatrix[y][x] = 0;  // Initialize as non-edge
+    }
+  }
+
+  // Perform double thresholding
+  for (int y = 1; y < height - 1; y++) {
+    for (int x = 1; x < width - 1; x++) {
+      if (inputMatrix[y][x] >= highThreshold) {
+        outputMatrix[y][x] = 255;  // Strong edge
+      } else if (inputMatrix[y][x] >= lowThreshold) {
+        // Check if connected to a strong edge
+        bool connectedToStrongEdge = false;
+        for (int ky = -1; ky <= 1; ky++) {
+          for (int kx = -1; kx <= 1; kx++) {
+            if (inputMatrix[y + ky][x + kx] >= highThreshold) {
+              connectedToStrongEdge = true;
+              break;
+            }
+          }
+          if (connectedToStrongEdge) break;
+        }
+        if (connectedToStrongEdge) {
+          outputMatrix[y][x] = 255;  // Weak edge connected to strong edge
+        }
+      }
+    }
+  }
+}
+
+void sumSobel(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint8_t **hSobelMatrix, uint8_t **sumSobelMatrix) {
   // Copy the results from previous operations to a final matrix
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
-      processedMatrix[y][x] = max(0, min(255,vSobelMatrix[y][x] + hSobelMatrix[y][x]));
+      sumSobelMatrix[y][x] = max(0, min(255, vSobelMatrix[y][x] + hSobelMatrix[y][x]));
     }
   }
 }
