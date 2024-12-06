@@ -223,7 +223,7 @@ void executionChecker(String fileName, uint8_t **grayscaleMatrix, uint8_t **gaus
   uint32_t finishTime = 0;
   uint32_t averageTime = 0;
   Serial.println("Begin execution time checker");
-  for (int i = 0; i < 50; i++) {
+  for (int i = 0; i < 256; i++) {
     currentTime = micros();
     takeSavePhoto();
     readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);                            // Read image and convert to 8bit grayscale
@@ -235,7 +235,7 @@ void executionChecker(String fileName, uint8_t **grayscaleMatrix, uint8_t **gaus
     finishTime = micros();
     timeSpent += finishTime - currentTime;
   }
-  averageTime = timeSpent/50;
+  averageTime = timeSpent/256;
   Serial.print("The average execution time across 10 iterations to take an image and canny edge process it is: ");
   Serial.println(averageTime);
 }
