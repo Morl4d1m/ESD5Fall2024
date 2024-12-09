@@ -24,7 +24,7 @@ signed int desiredTurn = 0;
 signed int joystickInputX = 0;
 signed int joystickInputY = 0;
 
-TaskHandle_t hdlMovement, hdlWirelessCommunication, hdlPowerMonitor, hdlSpatialAwareness, hdlWaterAvoidance, hdlMapping, hdlGoHome, hdlUpdateUser, hdlTakePicture, hdlProcessPicture;  // Must be made in order for the handles to work in xTaskCreate
+TaskHandle_t hdlMovement, hdlWirelessCommunication, hdlTakeAndProcessPicture, hdlComputeControlSignals;  // Must be made in order for the handles to work in xTaskCreate //hdlPowerMonitor, hdlSpatialAwareness, hdlWaterAvoidance, hdlMapping, hdlGoHome, hdlUpdateUser, hdlProcessPicture,
 
 SemaphoreHandle_t avgSem, Mutex;  // Creation of semaphore handles
 
@@ -55,16 +55,10 @@ void setup() {
   Serial.println("Calibration done");
   Serial.println("Task creation");                                                                        // Status update to figure out which function is running
   xTaskCreate(MyIdleTask, "IdleTask", 1000, NULL, 0, NULL);                                               // Idle task to check if there is any time left to execute tasks in
-  xTaskCreate(movement, "movement", 1000, NULL, 0, &hdlMovement);                                         // Desired movement of the de-weeder
-  xTaskCreate(wirelessCommunication, "wirelessCommunication", 1000, NULL, 0, &hdlWirelessCommunication);  // Task for wireless communication
-  xTaskCreate(powerMonitoring, "powerMonitoring", 1000, NULL, 0, &hdlPowerMonitor);                       // Power monitoring task
-  xTaskCreate(spatialAwareness, "spatialAwareness", 1000, NULL, 0, &hdlSpatialAwareness);                 //
-  xTaskCreate(waterAvoidance, "waterAvoidance", 1000, NULL, 0, &hdlWaterAvoidance);
-  xTaskCreate(mapping, "mapping", 1000, NULL, 0, &hdlMapping);
-  xTaskCreate(goHome, "goHome", 1000, NULL, 0, &hdlGoHome);
-  xTaskCreate(updateUser, "updateUser", 1000, NULL, 0, &hdlUpdateUser);
-  xTaskCreate(takePicture, "takePicture", 1000, NULL, 0, &hdlTakePicture);
-  xTaskCreate(processPicture, "processPicture", 1000, NULL, 0, &hdlProcessPicture);
+  xTaskCreate(movement, "movement", 1000, NULL, 1, &hdlMovement);                                         // Desired movement of the de-weeder
+  xTaskCreate(wirelessCommunication, "wirelessCommunication", 1000, NULL, 2, &hdlWirelessCommunication);  // Task for wireless communication
+  xTaskCreate(takeAndProcessPicture, "takePicture", 1000, NULL, 3, &hdlTakeAndProcessPicture);
+  xTaskCreate(computeControlSignals, "computeControlSignals", 1000, NULL, 3, &hdlComputeControlSignals);
   // xTaskCreate(vTaskFunction, "Opgave1", 1000, &myData, 1, NULL);      // Funktionerne SKAL vaere defineret som en funktion laengere ned i koden (linje 44) inden man kan compile ellers vil syntax ikke godtage det. Altsaa skal der vaere defineret en funktion, foer man kan kalde xTaskCreate
   // vTaskFunction er funktionen tasket skal udfoere, ligesom i samletSketchPico, hvor loop funktionen kalder en funktion som lysTimer. Man kan lave flere nested funktioner inde i funktionen ligesom normalt, men saa skal man laegge stoerrelsen paa alle funktionerne sammen til ens stack size
   // "Opgave1" benyttes at identificere hvilket task der koerer hvornaar, se dem som navne. Disse bliver IKKE printet nogen steder i arduino IDE. Man kan dog bruge nogen freeRTOS debugging tools til at vise state af de forskellige funktioner, og saa kan man se navnene paa dem
@@ -85,6 +79,7 @@ void loop() {
 
 static void movement(void *pvParameters) {
   while (1) {
+    Serial.println("movement");
     joystickInputX = analogRead(joystickInputXPin);  // Reading from the joystick saved as input value
     joystickInputY = analogRead(joystickInputYPin);  // Reading from the joystick saved as input value
 
@@ -165,63 +160,29 @@ static void movement(void *pvParameters) {
       analogWrite(hBridgeInput2, desiredMove);  // Stop left belt backward
       analogWrite(hBridgeInput4, desiredMove);  // Stop right belt backward
     }
-    Serial.println("movement");  // Status update to figure out which function is running
+  vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 50 milliseconds
   }
-  vTaskDelay(50 / portTICK_PERIOD_MS);  // Delay for 50 milliseconds
 }
 
 
 static void wirelessCommunication(void *pvParameters) {
   while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    Serial.println("wirelessCommunication");
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
-static void powerMonitoring(void *pvParameters) {
+static void takeAndProcessPicture(void *pvParameters) {
   while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    Serial.println("takeAndProcessPicture");
+    vTaskDelay(400 / portTICK_PERIOD_MS);
   }
 }
 
-static void spatialAwareness(void *pvParameters) {
+static void computeControlSignals(void *pvParameters) {
   while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-  }
-}
-
-static void waterAvoidance(void *pvParameters) {
-  while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-  }
-}
-
-static void mapping(void *pvParameters) {
-  while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-  }
-}
-
-static void goHome(void *pvParameters) {
-  while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-  }
-}
-
-static void updateUser(void *pvParameters) {
-  while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-  }
-}
-
-static void takePicture(void *pvParameters) {
-  while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
-  }
-}
-
-static void processPicture(void *pvParameters) {
-  while (1) {
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    Serial.println("computeControlSignals");
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
@@ -231,14 +192,8 @@ void stop() {                              // Emergency stop function
   digitalWrite(emergencyLightPin, LOW);    // Lights up the emergency lights
   vTaskSuspend(hdlMovement);               // Suspends movement task
   vTaskSuspend(hdlWirelessCommunication);  // Suspends wirelessCommunication task
-  vTaskSuspend(hdlPowerMonitor);           // Suspends powerMonitoring task
-  vTaskSuspend(hdlSpatialAwareness);       // Suspends spatialAwareness task
-  vTaskSuspend(hdlWaterAvoidance);         // Suspends waterAvoidance task
-  vTaskSuspend(hdlMapping);                // Suspends mapping task
-  vTaskSuspend(hdlGoHome);                 // Suspends goHome task
-  vTaskSuspend(hdlUpdateUser);             // Suspends updateUser task
-  vTaskSuspend(hdlTakePicture);            // Suspends takePicture task
-  vTaskSuspend(hdlProcessPicture);         // Suspends processPicture task
+  vTaskSuspend(hdlTakeAndProcessPicture);         // Suspends processPicture task
+  vTaskSuspend(hdlComputeControlSignals);  // Suspends computeControlSignals task
   analogWrite(hBridgeInput1, HIGH);        // Stop left belt forward
   analogWrite(hBridgeInput3, HIGH);        // Stop right belt forward
   analogWrite(hBridgeInput2, HIGH);        // Stop left belt backward

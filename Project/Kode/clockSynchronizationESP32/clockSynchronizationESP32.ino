@@ -1,72 +1,99 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
+#include <esp_mac.h>  // For the MAC2STR and MACSTR macros
+
+// Master ESP32 MAC: a0:b7:65:4c:0e:f0
+// Slave ESPCAM MAC: 08:a6:f7:10:64:a4
 
 // Variables to send
-float ch1Output = 1.23, ch2Output = 4.56, ch3Output = 7.89, ch4Output = 0.12;
+uint8_t ch1Output = 53;
+uint8_t ch2Output = 0;
+uint8_t ch3Output = 53;
+uint8_t ch4Output = 0;
 
-// Slave MAC Address (update with actual MAC)
-uint8_t slaveMac[] = {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC};
+// Slave MAC Address
+uint8_t slaveMAC[] = { 0x08, 0xa6, 0xf7, 0x10, 0x64, 0xa4 };
 
 // Struct for ESPNOW message
 typedef struct {
-    uint32_t timestamp; // Master time
-    float ch1, ch2, ch3, ch4; // Outputs
-} espNowMessage_t;
+  uint32_t timestamp;          // Master time
+  uint8_t ch1, ch2, ch3, ch4;  // Outputs
+} esp32MasterMessage_t;
 
-espNowMessage_t outgoingMessage;
+esp32MasterMessage_t outgoingMessage;  // Storage for struct
 
-// Callback to confirm message sent
-void onSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Message sent successfully" : "Message send failed");
+esp_now_peer_info_t peerInfo;  // Store information about peer
+
+// callback when data is sent
+void dataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");  // Remember that the ? is an inline if statement, returning the first value if true and the second if false
 }
 
 void setup() {
-    Serial.begin(115200);
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
+  // Init Serial Monitor
+  Serial.begin(115200);
 
-    // Initialize ESPNOW
-    if (esp_now_init() != ESP_OK) {
-        Serial.println("Error initializing ESPNOW");
-        return;
-    }
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
 
-    // Register peer
-    esp_now_peer_info_t peerInfo;
-    memset(&peerInfo, 0, sizeof(peerInfo));
-    memcpy(peerInfo.peer_addr, slaveMac, 6);
-    peerInfo.channel = 0; // Default channel
-    peerInfo.encrypt = false;
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-        Serial.println("Failed to add peer");
-        return;
-    }
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
 
-    esp_now_register_send_cb(onSent);
+  // Once ESPNow is successfully Init, we will register for Send CB to
+  // get the status of Trasnmitted packet
+  esp_now_register_send_cb(dataSent);  // Personalization instead of the std ESPNOW callback
+
+  // Register peer
+  memcpy(peerInfo.peer_addr, slaveMAC, 6);
+  peerInfo.channel = 0;      // Assign a channel to transmit data across
+  peerInfo.encrypt = false;  // Set true if encryption is wanted
+
+  // Add peer
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add peer");
+    return;
+  }
 }
 
 void loop() {
-    // Prepare message
-    outgoingMessage.timestamp = esp_timer_get_time(); // Microsecond precision
-    outgoingMessage.ch1 = ch1Output;
-    outgoingMessage.ch2 = ch2Output;
-    outgoingMessage.ch3 = ch3Output;
-    outgoingMessage.ch4 = ch4Output;
+  // Prepare message
+  outgoingMessage.timestamp = esp_timer_get_time();  // Microsecond precision
+  outgoingMessage.ch1 = ch1Output;
+  outgoingMessage.ch2 = ch2Output;
+  outgoingMessage.ch3 = ch3Output;
+  outgoingMessage.ch4 = ch4Output;
 
-    // Send message to slave
-    esp_now_send(slaveMac, (uint8_t *)&outgoingMessage, sizeof(outgoingMessage));
+  // Send message to slave
+  esp_err_t result = esp_now_send(slaveMAC, (uint8_t *)&outgoingMessage, sizeof(outgoingMessage)); // The esp_err_t result is made to constantly check the integrity, and ensure data is sent
 
-    // Update outputs for testing (replace with actual logic)
-    ch1Output += 0.1;
-    ch2Output += 0.2;
-    ch3Output += 0.3;
-    ch4Output += 0.4;
+  if (result == ESP_OK) {
+    Serial.println("Sent with success");
+  } else {
+    Serial.println("Error sending the data");
+  }
 
-    delay(1000); // Periodic synchronization (1 second)
+  // Update outputs for testing (replace with actual logic)
+  ch1Output += 1;
+  ch2Output += 1;
+  ch3Output += 1;
+  ch4Output += 1;
+
+  delay(500);  // Periodic synchronization
 }
 
-void findMACAddress(){
-    WiFi.mode(WIFI_STA); // Set WiFi to station mode
-    Serial.print("MAC Address: ");
-    Serial.println(WiFi.macAddress());
+void readMacAddress() {
+  uint8_t baseMac[6];
+  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, baseMac);
+  if (ret == ESP_OK) {
+    Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n",
+                  baseMac[0], baseMac[1], baseMac[2],
+                  baseMac[3], baseMac[4], baseMac[5]);
+  } else {
+    Serial.println("Failed to read MAC address");
+  }
 }
