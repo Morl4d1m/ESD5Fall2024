@@ -8,27 +8,60 @@ uint8_t ch1Output = 0;
 uint8_t ch2Output = 0;
 uint8_t ch3Output = 0;
 uint8_t ch4Output = 0;
+uint32_t packagenumber = 0;
+uint32_t lastPackageNumber = 0;
 
 // Time synchronization variables
 uint32_t masterTime = 0;
 uint32_t slaveTimeOffset = 0;
 
+// Master MAC Address
+uint8_t masterMAC[] = { 0xa0, 0xb7, 0x65, 0x4c, 0x0e, 0xf0 };
+
 // Struct for ESPNOW message
 typedef struct {
   uint32_t timestamp;          // Master time
+  uint32_t packageNumber;      // Sequence number
   uint8_t ch1, ch2, ch3, ch4;  // Outputs
 } esp32MasterMessage_t;
 
 esp32MasterMessage_t incomingMessage;  //Storage for struct
 
 // Callback to handle received messages
-void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
-  if (len != sizeof(esp32MasterMessage_t)) {  //Checksum to see if the packet has expected size
+void dataReceive(const esp_now_recv_info_t *recvInfo, const uint8_t *incomingData, int len) {
+  if (len != sizeof(esp32MasterMessage_t)) {
     Serial.println("Invalid message size");
     return;
   }
 
   memcpy(&incomingMessage, incomingData, sizeof(incomingMessage));
+
+  if (incomingMessage.packageNumber > lastPackageNumber + 1 && lastPackageNumber != 0) {
+    Serial.printf("Warning: Missing packet(s). Last received: %d, Current: %d\n",
+                  lastPackageNumber, incomingMessage.packageNumber);
+  }
+
+  lastPackageNumber = incomingMessage.packageNumber;
+
+  // Ensure the master is a registered peer
+  esp_now_peer_info_t peerInfo;
+  memcpy(peerInfo.peer_addr, masterMAC, 6);
+  peerInfo.channel = 0;  // Match channel with master
+  peerInfo.encrypt = false;
+
+  if (!esp_now_is_peer_exist(masterMAC)) {
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+      Serial.println("Failed to add master as a peer");
+      return;
+    }
+  }
+  // Send acknowledgment
+  esp_err_t result = esp_now_send(masterMAC, (uint8_t *)&incomingMessage.packageNumber, sizeof(incomingMessage.packageNumber));
+  if (result == ESP_OK) {
+    Serial.println("ACK sent successfully");
+  } else {
+    Serial.printf("ACK send failed, error: %d\n", result);
+  }
 
   // Calculate clock offset
   uint32_t now = esp_timer_get_time();
@@ -41,7 +74,7 @@ void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) 
   ch3Output = incomingMessage.ch3;
   ch4Output = incomingMessage.ch4;
 
-  //Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output);
+  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d, PackageNumber=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output, lastPackageNumber);
 }
 
 void setup() {
@@ -52,20 +85,35 @@ void setup() {
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
-  }
+  }  
 
-  // Once ESPNow is successfully Init, we will register for receive CB to
-  // get receive packet info
-  esp_now_register_recv_cb(esp_now_recv_cb_t(dataReceive));
+  // Once ESPNow is successfully Init, get receive packet info
+  esp_now_register_recv_cb(dataReceive);
+
+   // Ensure the master is a registered peer only once
+  esp_now_peer_info_t peerInfo;
+  memcpy(peerInfo.peer_addr, masterMAC, 6);  // Master MAC address
+  peerInfo.channel = 0;  // Match the channel with the master
+  peerInfo.encrypt = false;  // No encryption
+
+  // Add the master as a peer if not already done
+  if (!esp_now_is_peer_exist(masterMAC)) {
+    esp_err_t result = esp_now_add_peer(&peerInfo);
+    if (result != ESP_OK) {
+      Serial.println("Failed to add master as a peer");
+      return;
+    }
+    Serial.println("Master peer added successfully");
+  }
 }
 
 void loop() {
-  Serial.print("Local ESPCAM time: ");
-  Serial.println(micros());
+  //Serial.print("Local ESPCAM time: ");
+  //Serial.println(micros());
   // Adjust local clock if necessary (for tasks that require synchronization)
   uint32_t correctedTime = esp_timer_get_time() + slaveTimeOffset;
-  Serial.print("Corrected time: ");
-  Serial.println(correctedTime);
+  //Serial.print("Corrected time: ");
+  //Serial.println(correctedTime);
 
   // Placeholder for periodic tasks
   delay(1000);  // Example periodic task
