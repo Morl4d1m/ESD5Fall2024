@@ -50,8 +50,8 @@ void receiveAck(const esp_now_recv_info *info, const uint8_t *data, int len) {
            info->src_addr[0], info->src_addr[1], info->src_addr[2],
            info->src_addr[3], info->src_addr[4], info->src_addr[5]);
   Serial.printf("ACK received from: %s\n", macStr);
-  Serial.println(outgoingMessage.packageNumber);
-  Serial.println(packageNumber);
+  //Serial.println(outgoingMessage.packageNumber);
+  //Serial.println(packageNumber);
   // Verify the package number in the ACK
   //memcpy(&outgoingMessage, data, sizeof(outgoingMessage));
   if (outgoingMessage.packageNumber == packageNumber-1) {
