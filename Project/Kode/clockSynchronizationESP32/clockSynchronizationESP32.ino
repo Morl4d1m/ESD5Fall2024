@@ -45,7 +45,7 @@ void setup() {
   }
 
   // Once ESPNow is successfully Init, we will register for Send CB to
-  // get the status of Trasnmitted packet
+  // get the status of trans  mitted packet
   esp_now_register_send_cb(dataSent);  // Personalization instead of the std ESPNOW callback
 
   // Register peer
@@ -82,8 +82,9 @@ void loop() {
   ch2Output += 1;
   ch3Output += 1;
   ch4Output += 1;
+  Serial.printf("ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", ch1Output, ch2Output, ch3Output, ch4Output);
 
-  delay(500);  // Periodic synchronization
+  delay(1000);  // Periodic synchronization
 }
 
 void readMacAddress() {

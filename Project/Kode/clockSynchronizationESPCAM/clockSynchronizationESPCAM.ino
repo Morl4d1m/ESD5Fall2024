@@ -4,7 +4,10 @@
 #include <esp_mac.h>  // For the MAC2STR and MACSTR macros
 
 // Variables to receive
-float ch1Output = 0, ch2Output = 0, ch3Output = 0, ch4Output = 0;
+uint8_t ch1Output = 0;
+uint8_t ch2Output = 0;
+uint8_t ch3Output = 0;
+uint8_t ch4Output = 0;
 
 // Time synchronization variables
 uint32_t masterTime = 0;
@@ -16,6 +19,8 @@ typedef struct {
   uint8_t ch1, ch2, ch3, ch4;  // Outputs
 } esp32MasterMessage_t;
 
+esp32MasterMessage_t incomingMessage; //Storage for struct
+
 // Callback to handle received messages
 void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
   if (len != sizeof(esp32MasterMessage_t)) {  //Checksum to see if the packet has expected size
@@ -23,8 +28,7 @@ void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) 
     return;
   }
 
-  esp32MasterMessage_t incomingMessage;
-  memcpy(&incomingMessage, incomingData, sizeof(len));
+  memcpy(&incomingMessage, incomingData, sizeof(incomingMessage));
 
   // Calculate clock offset
   uint32_t now = esp_timer_get_time();
@@ -37,13 +41,12 @@ void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) 
   ch3Output = incomingMessage.ch3;
   ch4Output = incomingMessage.ch4;
 
-  Serial.printf("Sync: Offset=%d µs, ch1=%.2f, ch2=%.2f, ch3=%.2f, ch4=%.2f\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output);
+  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output);
 }
 
 void setup() {
   Serial.begin(115200);
 
-  Serial.print("ESP32 Board MAC Address: ");
   WiFi.mode(WIFI_STA);
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -51,8 +54,8 @@ void setup() {
     return;
   }
 
-  // Once ESPNow is successfully Init, we will register for recv CB to
-  // get recv packer info
+  // Once ESPNow is successfully Init, we will register for receive CB to
+  // get receive packet info
   esp_now_register_recv_cb(esp_now_recv_cb_t(dataReceive));
 }
 
@@ -61,7 +64,7 @@ void loop() {
   uint32_t correctedTime = esp_timer_get_time() + slaveTimeOffset;
 
   // Placeholder for periodic tasks
-  delay(500);  // Example periodic task
+  delay(1000);  // Example periodic task
 }
 
 void readMacAddress() {
