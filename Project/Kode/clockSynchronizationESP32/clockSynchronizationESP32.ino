@@ -12,6 +12,10 @@ uint8_t ch2Output = 0;
 uint8_t ch3Output = 53;
 uint8_t ch4Output = 0;
 
+
+uint32_t timeSpent = 0;
+uint32_t startTime = 0;
+
 // Slave MAC Address
 uint8_t slaveMAC[] = { 0x08, 0xa6, 0xf7, 0x10, 0x64, 0xa4 };
 
@@ -27,12 +31,13 @@ esp_now_peer_info_t peerInfo;  // Store information about peer
 
 // callback when data is sent
 void dataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");  // Remember that the ? is an inline if statement, returning the first value if true and the second if false
+  //Serial.print("\r\nLast Packet Send Status:\t");
+  //Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");  // Remember that the ? is an inline if statement, returning the first value if true and the second if false
 }
 
 void setup() {
   // Init Serial Monitor
+  startTime = micros();
   Serial.begin(115200);
 
   // Set device as a Wi-Fi Station
@@ -58,9 +63,14 @@ void setup() {
     Serial.println("Failed to add peer");
     return;
   }
+  uint32_t setupTime = micros();
+  timeSpent = setupTime-startTime;
+  //Serial.println("SetupTime");
+  //Serial.println(timeSpent);
 }
 
 void loop() {
+  startTime = micros();
   // Prepare message
   outgoingMessage.timestamp = esp_timer_get_time();  // Microsecond precision
   outgoingMessage.ch1 = ch1Output;
@@ -82,8 +92,13 @@ void loop() {
   ch2Output += 1;
   ch3Output += 1;
   ch4Output += 1;
-  Serial.printf("ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", ch1Output, ch2Output, ch3Output, ch4Output);
-
+  //Serial.printf("ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", ch1Output, ch2Output, ch3Output, ch4Output);
+  uint32_t loopTime = micros();
+  timeSpent = loopTime-startTime;
+  //Serial.println("LoopTime");
+  //Serial.println(timeSpent);
+  Serial.print("Local ESP32 time: ");
+  Serial.println(micros());
   delay(1000);  // Periodic synchronization
 }
 

@@ -19,7 +19,7 @@ typedef struct {
   uint8_t ch1, ch2, ch3, ch4;  // Outputs
 } esp32MasterMessage_t;
 
-esp32MasterMessage_t incomingMessage; //Storage for struct
+esp32MasterMessage_t incomingMessage;  //Storage for struct
 
 // Callback to handle received messages
 void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
@@ -32,7 +32,7 @@ void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) 
 
   // Calculate clock offset
   uint32_t now = esp_timer_get_time();
-  uint32_t estimatedMasterTime = incomingMessage.timestamp + (now - incomingMessage.timestamp) / 2;  // Account for transmission delay
+  uint32_t estimatedMasterTime = incomingMessage.timestamp;  // Account for transmission delay
   slaveTimeOffset = estimatedMasterTime - now;
 
   // Update variables
@@ -41,7 +41,7 @@ void dataReceive(const uint8_t *mac_addr, const uint8_t *incomingData, int len) 
   ch3Output = incomingMessage.ch3;
   ch4Output = incomingMessage.ch4;
 
-  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output);
+  //Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output);
 }
 
 void setup() {
@@ -60,8 +60,12 @@ void setup() {
 }
 
 void loop() {
+  Serial.print("Local ESPCAM time: ");
+  Serial.println(micros());
   // Adjust local clock if necessary (for tasks that require synchronization)
   uint32_t correctedTime = esp_timer_get_time() + slaveTimeOffset;
+  Serial.print("Corrected time: ");
+  Serial.println(correctedTime);
 
   // Placeholder for periodic tasks
   delay(1000);  // Example periodic task
