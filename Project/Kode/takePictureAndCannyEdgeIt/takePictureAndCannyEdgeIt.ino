@@ -188,7 +188,7 @@ void setup() {
   }
   Serial.println("Memory allocated for column pointers.");
 
-  executionChecker(imageFileName, grayscaleMatrix, gaussBlurMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);
+  //executionChecker(imageFileName, grayscaleMatrix, gaussBlurMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);
 
   Serial.println("Begin");
 
