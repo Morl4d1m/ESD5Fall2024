@@ -219,95 +219,118 @@ uint8_t matrix12[ROWS][COLS] = { { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                                  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
                                  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
+uint8_t matrix13[ROWS][COLS] = { { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                                 { 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
+
 
 void setup() {
-  uint32_t startTime=0;
-  uint32_t endTime=0;
-  uint32_t spentTime=0;
+  uint32_t startTime = 0;
+  uint32_t endTime = 0;
+  uint32_t spentTime = 0;
   Serial.begin(115200);
   Serial.println("Matrix 1");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix1);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 2");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix2);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 3");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix3);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 4");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix4);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 5");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix5);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 6");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix6);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 7");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix7);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 8");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix8);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 9");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix9);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 10");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix10);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 11");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix11);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
   Serial.println("Matrix 12");
   // Analyze the matrix
-  startTime=micros();
+  startTime = micros();
   analyzeMatrix(matrix12);
-  endTime=micros();
-  spentTime=endTime-startTime;
+  endTime = micros();
+  spentTime = endTime - startTime;
+  Serial.println(spentTime);
+  Serial.println("Matrix 13");
+  // Analyze the matrix
+  startTime = micros();
+  analyzeMatrix(matrix13);
+  endTime = micros();
+  spentTime = endTime - startTime;
   Serial.println(spentTime);
 }
 
