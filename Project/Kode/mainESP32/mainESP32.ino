@@ -93,9 +93,8 @@ void dataReceive(const esp_now_recv_info_t *recvInfo, const uint8_t *incomingDat
   ch2Output = incomingMessage.ch2;
   ch3Output = incomingMessage.ch3;
   ch4Output = incomingMessage.ch4;
-  itNumber = incomingMessage.itNumber;
 
-  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d, PackageNumber=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output, lastPackageNumber);
+  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d, Iteration number=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output, lastPackageNumber);
 }
 
 void setup() {

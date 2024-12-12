@@ -19,7 +19,7 @@ uint32_t timeSpent = 0;
 uint32_t startTime = 0;
 
 // Slave MAC Address
-uint8_t slaveMAC[] = { 0x08, 0xa6, 0xf7, 0x10, 0x64, 0xa4 };
+uint8_t slaveMAC[] = { 0xa0, 0xb7, 0x65, 0x4c, 0x0e, 0xf0 };
 
 // Struct for ESPNOW message
 typedef struct {

@@ -101,7 +101,7 @@ uint32_t finishTime = 0;
 uint32_t timeSpent = 0;
 uint32_t totalTime = 0;
 uint32_t averageTime = 0;
-int testIteration = 1;
+int testIteration = 0;
 
 //HEAP/STACK INFO
 #include "esp_heap_caps.h"
@@ -153,11 +153,12 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w; w < 1000; w++) {
-    startTime = millis();
-
+  for (int w; w < 10000; w++) {
+    testIteration++;
     // Stack size monitoring
     printHeapInfo();
+    startTime = millis();
+
     //Take and Save Photo
     takeSavePhoto();
     //Serial.println("Photo taken?");
@@ -188,10 +189,10 @@ void setup() {
     analyzeMatrix(downsampledMatrix);
     //Serial.println("Matrix analyzed");
 
-    // Stack size monitoring
-    printHeapInfo();
 
     finishTime = millis();
+    // Stack size monitoring
+    //printHeapInfo();
     timeSpent = finishTime - startTime;
     totalTime += timeSpent;
     averageTime = totalTime / testIteration;
@@ -202,7 +203,6 @@ void setup() {
     Serial.print("Average time spent: ");
     Serial.println(averageTime);
     sendMessageReceiveACK();
-    testIteration++;
     //delay(500);
   }
   Serial.print("Done testing! The average time spent to perform was: ");
@@ -779,11 +779,10 @@ void sendMessageReceiveACK() {
       Serial.println("Error sending the data");
     } else {
       Serial.println("Sent with success");
-      ackReceived = true;
     }
 
     delay(100);  // Wait for acknowledgment
-    if (ackReceived==true) break;
+    if (ackReceived == true) break;
   }
 
   if (!ackReceived) {
@@ -829,7 +828,7 @@ void receiveAck(const esp_now_recv_info *info, const uint8_t *data, int len) {
   //Serial.println(packageNumber);
   // Verify the package number in the ACK
   //memcpy(&outgoingMessage, data, sizeof(outgoingMessage));
-  if (outgoingMessage.packageNumber == packageNumber - 1) {
+  if (outgoingMessage.packageNumber == testIteration ) {
     ackReceived = true;
     Serial.printf("ACK received for package %d\n", outgoingMessage.packageNumber);
   }
