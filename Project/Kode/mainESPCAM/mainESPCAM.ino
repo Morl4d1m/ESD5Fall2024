@@ -9,9 +9,9 @@
 bool ackReceived = false;  // Flag for acknowledgment
 
 // Variables to send
-uint8_t ch1Output = 255;
+uint8_t ch1Output = 127;
 uint8_t ch2Output = 0;
-uint8_t ch3Output = 255;
+uint8_t ch3Output = 127;
 uint8_t ch4Output = 0;
 uint32_t packageNumber = 0;
 
@@ -130,6 +130,11 @@ void setup() {
   Serial.println("SD card initialized.");
 
   ESPNOWSetup();
+    
+    // Stack size monitoring
+    UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // NULL gets the current task
+    Serial.print("Remaining stack size: ");
+    Serial.println(stackHighWaterMark * 4);  // Convert to bytes
 
   // Initialize all matrices
   uint8_t **grayscaleMatrix = initializeMatrix(imgWidth, imgHeight, "grayscaleMatrix");
@@ -146,7 +151,7 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w; w < 10; w++) {
+  for (int w; w < 100; w++) {
     startTime = millis();
     //Take and Save Photo
     takeSavePhoto();
@@ -176,7 +181,13 @@ void setup() {
     //Serial.println("Matrix downsampled");
     //downDisplayMatrix(downsampledMatrix);
     analyzeMatrix(downsampledMatrix);
-    //Serial.println("Matrix analyzed");
+    //Serial.println("Matrix analyzed"); 
+    
+    // Stack size monitoring
+    UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // NULL gets the current task
+    Serial.print("Remaining stack size: ");
+    Serial.println(stackHighWaterMark * 4);  // Convert to bytes
+
     finishTime = millis();
     timeSpent = finishTime - startTime;
     totalTime += timeSpent;
@@ -187,6 +198,7 @@ void setup() {
     Serial.println(timeSpent);
     Serial.print("Average time spent: ");
     Serial.println(averageTime);
+  //sendMessageReceiveACK();
     testIteration++;
     //delay(500);
   }
@@ -194,7 +206,6 @@ void setup() {
   Serial.println(averageTime);
 }
 void loop() {
-  sendMessageReceiveACK();
 }
 
 void configInitCamera() {
@@ -752,7 +763,7 @@ void ESPNOWSetup() {
 void sendMessageReceiveACK() {
   // Prepare message
   outgoingMessage.timestamp = esp_timer_get_time();  // Microsecond precision
-  outgoingMessage.packageNumber = packageNumber++;
+  outgoingMessage.packageNumber = testIteration;//packageNumber++;
   outgoingMessage.ch1 = ch1Output;
   outgoingMessage.ch2 = ch2Output;
   outgoingMessage.ch3 = ch3Output;
