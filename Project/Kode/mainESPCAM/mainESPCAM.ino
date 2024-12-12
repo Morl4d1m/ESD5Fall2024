@@ -153,7 +153,7 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w; w < 100; w++) {
+  for (int w; w < 1000; w++) {
     startTime = millis();
 
     // Stack size monitoring
@@ -201,7 +201,7 @@ void setup() {
     Serial.println(timeSpent);
     Serial.print("Average time spent: ");
     Serial.println(averageTime);
-    //sendMessageReceiveACK();
+    sendMessageReceiveACK();
     testIteration++;
     //delay(500);
   }
@@ -773,16 +773,17 @@ void sendMessageReceiveACK() {
   outgoingMessage.ch4 = ch4Output;
 
   ackReceived = false;
-  for (int retry = 0; retry < 5; retry++) {
+  for (int retry = 0; retry < 3; retry++) {
     esp_err_t result = esp_now_send(slaveMAC, (uint8_t *)&outgoingMessage, sizeof(outgoingMessage));
     if (result != ESP_OK) {
       Serial.println("Error sending the data");
     } else {
       Serial.println("Sent with success");
+      ackReceived = true;
     }
 
     delay(100);  // Wait for acknowledgment
-    if (ackReceived) break;
+    if (ackReceived==true) break;
   }
 
   if (!ackReceived) {
