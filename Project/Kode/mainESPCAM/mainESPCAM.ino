@@ -7,7 +7,7 @@
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-const char *testImageFileName = "/picture76.jpg";  // Path to image on the SD card
+String testImageFileName = "/picture76.jpg";  // Path to image on the SD card
 
 // Image dimensions
 const int imgWidth = 160;
@@ -63,6 +63,15 @@ const int scale = 5;  // Downsampling factor
 const int downImgHeight = imgHeight / scale;
 const int downImgWidth = imgWidth / scale;
 
+// Variables for timing functions:
+uint32_t startTime = 0;
+uint32_t currentTime = 0;
+uint32_t finishTime = 0;
+uint32_t timeSpent = 0;
+uint32_t totalTime = 0;
+uint32_t averageTime = 0;
+int testIteration = 1;
+
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Disable brownout detector
 
@@ -104,40 +113,55 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  delay(10);
-  //Take and Save Photo
-  takeSavePhoto();
-  Serial.println("Photo taken?");
+  for (int w; w < 1000; w++) {
+    startTime = millis();
+    //Take and Save Photo
+    takeSavePhoto();
+    //Serial.println("Photo taken?");
 
-  // Read and display the grayscale image
-  readGrayscaleImageFromSD(testImageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
-  //displayMatrix(grayscaleMatrix);
-  //Serial.println("Grayscale");
-  gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);  // Gaussian blurring
-  //displayMatrix(gaussBlurMatrix);
-  //Serial.println("Gauss");
-  verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);  // Vertital sobel operation
-  //displayMatrix(vSobelMatrix);
-  //Serial.println("vSobel");
-  horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);  // Horizontal sobel operation
-  //displayMatrix(hSobelMatrix);
-  //Serial.println("hSobel");
-  sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);               // Sum sobel operator into 1 image
-  applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection
-  //Serial.println("sumSobel");
-  //displayMatrix(sumSobelMatrix);
-  Serial.println();
-  // Display the edge-detected matrix
-  //displayMatrix(edgeMatrix);
-  downsampleFromCenterAndTop(edgeMatrix, downsampledMatrix);
-  //Serial.println("Matrix downsampled");
-  downDisplayMatrix(downsampledMatrix);
-  analyzeMatrix(downsampledMatrix);
-  //Serial.println("Matrix analyzed");
+    // Read and display the grayscale image
+    readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
+    //displayMatrix(grayscaleMatrix);
+    //Serial.println("Grayscale");
+    gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);  // Gaussian blurring
+    //displayMatrix(gaussBlurMatrix);
+    //Serial.println("Gauss");
+    verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);  // Vertital sobel operation
+    //displayMatrix(vSobelMatrix);
+    //Serial.println("vSobel");
+    horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);  // Horizontal sobel operation
+    //displayMatrix(hSobelMatrix);
+    //Serial.println("hSobel");
+    sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);               // Sum sobel operator into 1 image
+    applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection
+    //Serial.println("sumSobel");
+    //displayMatrix(sumSobelMatrix);
+    Serial.println();
+    // Display the edge-detected matrix
+    //displayMatrix(edgeMatrix);
+    downsampleFromCenterAndTop(edgeMatrix, downsampledMatrix);
+    //Serial.println("Matrix downsampled");
+    //downDisplayMatrix(downsampledMatrix);
+    analyzeMatrix(downsampledMatrix);
+    //Serial.println("Matrix analyzed");
+    finishTime = millis();
+    timeSpent = finishTime - startTime;
+    totalTime += timeSpent;
+    averageTime = totalTime / testIteration;
+    Serial.print("Iteration number: ");
+    Serial.println(testIteration);
+    Serial.print("Time spent this iteration: ");
+    Serial.println(timeSpent);
+    Serial.print("Average time spent: ");
+    Serial.println(averageTime);
+    testIteration++;
+    delay(500);
+  }
+  Serial.print("Done testing! The average time spent to perform was: ");
+  Serial.println(averageTime);
 }
-
 void loop() {
-  // Do nothing
+  //Do nothing
 }
 
 void configInitCamera() {
@@ -225,14 +249,14 @@ void takeSavePhoto() {
   imageFileName = "/picture" + String(pictureNumber) + ".jpg";  //update imageFileName so other functions which number it is at
 
   fs::FS &fs = SD_MMC;
-  Serial.printf("Picture file name: %s\n", path.c_str());
+  //Serial.printf("Picture file name: %s\n", path.c_str());
 
   File file = fs.open(path.c_str(), FILE_WRITE);
   if (!file) {
     Serial.println("Failed to open file in writing mode");
   } else {
     file.write(fb->buf, fb->len);  // payload (image), payload length
-    Serial.printf("Saved file to path: %s\n", path.c_str());
+    //Serial.printf("Saved file to path: %s\n", path.c_str());
     EEPROM.write(0, pictureNumber);
     EEPROM.commit();
   }
@@ -272,11 +296,12 @@ uint8_t **initializeMatrix(int width, int height, const char *matrixName) {
   return matrix;
 }
 
-void readGrayscaleImageFromSD(const char *fileName, uint8_t **grayscaleMatrix) {
+void readGrayscaleImageFromSD(String fileName, uint8_t **grayscaleMatrix) {
   // Open the file from the SD card
   File file = SD_MMC.open(fileName, FILE_READ);
   if (!file) {
-    Serial.println("Error: Could not open image file.");
+    Serial.print("Error: Could not open image file: ");
+    Serial.println(fileName);
     return;
   }
 
@@ -564,10 +589,10 @@ void analyzeMatrix(uint8_t **matrix) {
   // Calculate angle for each component
   for (int l = 1; l < label; l++) {
     float angle = calculateComponentAngle(labelMatrix, l);
-    Serial.print("Component ");
-    Serial.print(l);
-    Serial.print(" Angle relative to centerline: ");
-    Serial.println(angle);
+    //Serial.print("Component ");
+    //Serial.print(l);
+    //Serial.print(" Angle relative to centerline: ");
+    //Serial.println(angle);
   }
 }
 
