@@ -53,7 +53,6 @@ void loop() {
   }
   difference07Adjusted();
   //difference12();
-  delayMicroseconds(345);
   //spinMeRightRound();
   //spinMeLeftRound();
   //Serial.println(buttonPresses);

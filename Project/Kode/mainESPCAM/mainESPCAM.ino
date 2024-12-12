@@ -9,14 +9,14 @@
 bool ackReceived = false;  // Flag for acknowledgment
 
 // Variables to send
-uint8_t ch1Output = 53;
+uint8_t ch1Output = 255;
 uint8_t ch2Output = 0;
-uint8_t ch3Output = 53;
+uint8_t ch3Output = 255;
 uint8_t ch4Output = 0;
 uint32_t packageNumber = 0;
 
 // Slave MAC Address
-uint8_t slaveMAC[] = { 0x08, 0xa6, 0xf7, 0x10, 0x64, 0xa4 };
+uint8_t slaveMAC[] = { 0xa0, 0xb7, 0x65, 0x4c, 0x0e, 0xf0 };
 
 // Struct for ESPNOW message
 typedef struct {
@@ -146,7 +146,7 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w; w < 100; w++) {
+  for (int w; w < 10; w++) {
     startTime = millis();
     //Take and Save Photo
     takeSavePhoto();
@@ -749,7 +749,7 @@ void ESPNOWSetup() {
   uint32_t setupTime = micros();
 }
 
-void sendMessageReceiveACK(){
+void sendMessageReceiveACK() {
   // Prepare message
   outgoingMessage.timestamp = esp_timer_get_time();  // Microsecond precision
   outgoingMessage.packageNumber = packageNumber++;
@@ -776,6 +776,21 @@ void sendMessageReceiveACK(){
     //In the final program, the system should be halted by now, as data has been lost
   }
 
+  // Update outputs for testing
+  if (ch1Output < 256) {
+    ch1Output += 1;
+    ch3Output += 1;
+    if (ch1Output == 256) {
+      ch1Output = 0;
+    }
+  }
+  if (ch2Output < 256) {
+    ch2Output += 1;
+    ch4Output += 1;
+    if (ch2Output == 256) {
+      ch2Output = 0;
+    }
+  }
 }
 
 void dataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
