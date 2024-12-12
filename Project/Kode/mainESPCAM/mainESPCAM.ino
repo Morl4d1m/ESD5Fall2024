@@ -38,7 +38,7 @@ esp_now_peer_info_t peerInfo;  // Store information about peer
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-String testImageFileName = "/picture76.jpg";  // Path to image on the SD card
+String testImageFileName = "/picture76Tester.jpg";  // Path to image on the SD card
 
 // Image dimensions
 const int imgWidth = 160;
@@ -153,7 +153,7 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w; w < 10000; w++) {
+  for (int w; w < 10000; w++) { // I know this is cursed, but it works, and adding the functions to loop does not ¯\_(ツ)_/¯
     testIteration++;
     // Stack size monitoring
     printHeapInfo();
@@ -182,10 +182,10 @@ void setup() {
     //displayMatrix(sumSobelMatrix);
     Serial.println();
     // Display the edge-detected matrix
-    //displayMatrix(edgeMatrix);
+    displayMatrix(edgeMatrix);
     downsampleFromCenterAndTop(edgeMatrix, downsampledMatrix);
     //Serial.println("Matrix downsampled");
-    //downDisplayMatrix(downsampledMatrix);
+    downDisplayMatrix(downsampledMatrix);
     analyzeMatrix(downsampledMatrix);
     //Serial.println("Matrix analyzed");
 
@@ -428,7 +428,7 @@ void readGrayscaleImageFromSD(String fileName, uint8_t **grayscaleMatrix) {
   //Serial.println("Finished reading image.");
 }
 
-DRAM_ATTR void displayMatrix(uint8_t **matrixToDisplay) {
+void displayMatrix(uint8_t **matrixToDisplay) {
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
       Serial.print(matrixToDisplay[y][x]);  // Print each value
@@ -439,7 +439,7 @@ DRAM_ATTR void displayMatrix(uint8_t **matrixToDisplay) {
   Serial.println("Matrix printed.");
 }
 
-DRAM_ATTR void downDisplayMatrix(uint8_t **matrixToDisplay) {
+void downDisplayMatrix(uint8_t **matrixToDisplay) {
   for (int y = 0; y < downImgHeight; y++) {
     for (int x = 0; x < downImgWidth; x++) {
       Serial.print(matrixToDisplay[y][x]);  // Print each value
