@@ -103,6 +103,10 @@ uint32_t totalTime = 0;
 uint32_t averageTime = 0;
 int testIteration = 1;
 
+//HEAP/STACK INFO
+#include "esp_heap_caps.h"
+UBaseType_t stackHighWaterMark;
+
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);  // Disable brownout detector
 
@@ -130,11 +134,9 @@ void setup() {
   Serial.println("SD card initialized.");
 
   ESPNOWSetup();
-    
-    // Stack size monitoring
-    UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // NULL gets the current task
-    Serial.print("Remaining stack size: ");
-    Serial.println(stackHighWaterMark * 4);  // Convert to bytes
+
+  // Stack size monitoring
+  printHeapInfo();
 
   // Initialize all matrices
   uint8_t **grayscaleMatrix = initializeMatrix(imgWidth, imgHeight, "grayscaleMatrix");
@@ -153,6 +155,9 @@ void setup() {
   Serial.println("All matrices initialized successfully.");
   for (int w; w < 100; w++) {
     startTime = millis();
+
+    // Stack size monitoring
+    printHeapInfo();
     //Take and Save Photo
     takeSavePhoto();
     //Serial.println("Photo taken?");
@@ -181,12 +186,10 @@ void setup() {
     //Serial.println("Matrix downsampled");
     //downDisplayMatrix(downsampledMatrix);
     analyzeMatrix(downsampledMatrix);
-    //Serial.println("Matrix analyzed"); 
-    
+    //Serial.println("Matrix analyzed");
+
     // Stack size monitoring
-    UBaseType_t stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // NULL gets the current task
-    Serial.print("Remaining stack size: ");
-    Serial.println(stackHighWaterMark * 4);  // Convert to bytes
+    printHeapInfo();
 
     finishTime = millis();
     timeSpent = finishTime - startTime;
@@ -198,7 +201,7 @@ void setup() {
     Serial.println(timeSpent);
     Serial.print("Average time spent: ");
     Serial.println(averageTime);
-  //sendMessageReceiveACK();
+    //sendMessageReceiveACK();
     testIteration++;
     //delay(500);
   }
@@ -314,7 +317,7 @@ uint8_t **initializeMatrix(int width, int height, const char *matrixName) {
   Serial.print("Allocating memory for ");
   Serial.println(matrixName);
 
-  uint8_t **matrix = (uint8_t **)malloc(height * sizeof(uint8_t *));
+  uint8_t **matrix = (uint8_t **)ps_malloc(height * sizeof(uint8_t *));
   if (!matrix) {
     Serial.print("Error: Not enough memory for ");
     Serial.println(matrixName);
@@ -322,7 +325,7 @@ uint8_t **initializeMatrix(int width, int height, const char *matrixName) {
   }
 
   for (int i = 0; i < height; i++) {
-    matrix[i] = (uint8_t *)malloc(width * sizeof(uint8_t));
+    matrix[i] = (uint8_t *)ps_malloc(width * sizeof(uint8_t));
     if (!matrix[i]) {
       Serial.print("Error: Not enough memory for row in ");
       Serial.println(matrixName);
@@ -425,7 +428,7 @@ void readGrayscaleImageFromSD(String fileName, uint8_t **grayscaleMatrix) {
   //Serial.println("Finished reading image.");
 }
 
-void displayMatrix(uint8_t **matrixToDisplay) {
+DRAM_ATTR void displayMatrix(uint8_t **matrixToDisplay) {
   for (int y = 0; y < imgHeight; y++) {
     for (int x = 0; x < imgWidth; x++) {
       Serial.print(matrixToDisplay[y][x]);  // Print each value
@@ -436,7 +439,7 @@ void displayMatrix(uint8_t **matrixToDisplay) {
   Serial.println("Matrix printed.");
 }
 
-void downDisplayMatrix(uint8_t **matrixToDisplay) {
+DRAM_ATTR void downDisplayMatrix(uint8_t **matrixToDisplay) {
   for (int y = 0; y < downImgHeight; y++) {
     for (int x = 0; x < downImgWidth; x++) {
       Serial.print(matrixToDisplay[y][x]);  // Print each value
@@ -451,9 +454,9 @@ void gaussBlurOperator(uint8_t **grayscaleMatrix, uint8_t **gaussBlurMatrix) {
   int gaussBlur[3][3] = { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } };
 
   // Allocate padded matrix
-  uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
+  uint8_t **paddedMatrix = (uint8_t **)ps_malloc(paddedHeight * sizeof(uint8_t *));
   for (int i = 0; i < paddedHeight; i++) {
-    paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
+    paddedMatrix[i] = (uint8_t *)ps_malloc(paddedWidth * sizeof(uint8_t));
   }
 
   // Fill padded matrix with mirrored values
@@ -496,9 +499,9 @@ void verticalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **vSobelMatrix) {
   int vSobel[3][3] = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
 
   // Allocate padded matrix
-  uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
+  uint8_t **paddedMatrix = (uint8_t **)ps_malloc(paddedHeight * sizeof(uint8_t *));
   for (int i = 0; i < paddedHeight; i++) {
-    paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
+    paddedMatrix[i] = (uint8_t *)ps_malloc(paddedWidth * sizeof(uint8_t));
   }
   for (int y = 1; y < imgHeight - 1; y++) {
     for (int x = 1; x < imgWidth - 1; x++) {
@@ -535,9 +538,9 @@ void horizontalSobelOperator(uint8_t **gaussBlurMatrix, uint8_t **hSobelMatrix) 
   int hSobel[3][3] = { { 1, 2, 1 }, { 0, 0, 0 }, { -1, -2, -1 } };
 
   // Allocate padded matrix
-  uint8_t **paddedMatrix = (uint8_t **)malloc(paddedHeight * sizeof(uint8_t *));
+  uint8_t **paddedMatrix = (uint8_t **)ps_malloc(paddedHeight * sizeof(uint8_t *));
   for (int i = 0; i < paddedHeight; i++) {
-    paddedMatrix[i] = (uint8_t *)malloc(paddedWidth * sizeof(uint8_t));
+    paddedMatrix[i] = (uint8_t *)ps_malloc(paddedWidth * sizeof(uint8_t));
   }
   for (int y = 1; y < imgHeight - 1; y++) {
     for (int x = 1; x < imgWidth - 1; x++) {
@@ -763,7 +766,7 @@ void ESPNOWSetup() {
 void sendMessageReceiveACK() {
   // Prepare message
   outgoingMessage.timestamp = esp_timer_get_time();  // Microsecond precision
-  outgoingMessage.packageNumber = testIteration;//packageNumber++;
+  outgoingMessage.packageNumber = testIteration;     //packageNumber++;
   outgoingMessage.ch1 = ch1Output;
   outgoingMessage.ch2 = ch2Output;
   outgoingMessage.ch3 = ch3Output;
@@ -841,4 +844,16 @@ void readMacAddress() {
   } else {
     Serial.println("Failed to read MAC address");
   }
+}
+
+void printHeapInfo() {
+  stackHighWaterMark = uxTaskGetStackHighWaterMark(NULL);  // NULL gets the current task
+  Serial.print("Remaining stack size: ");
+  Serial.println(stackHighWaterMark * 4);  // Convert to bytes
+  Serial.print("Total PSRAM: ");
+  Serial.println(ESP.getPsramSize());
+  Serial.print("Free heap: ");
+  Serial.println(ESP.getFreeHeap());
+  Serial.print("Free PSRAM: ");
+  Serial.println(ESP.getFreePsram());
 }

@@ -28,7 +28,6 @@ uint8_t ch1Output = 0;
 uint8_t ch2Output = 0;
 uint8_t ch3Output = 0;
 uint8_t ch4Output = 0;
-uint16_t itNumber;  // Iteration number
 uint32_t packagenumber = 0;
 uint32_t lastPackageNumber = 0;
 
@@ -44,7 +43,6 @@ typedef struct {
   uint32_t timestamp;          // Master time
   uint32_t packageNumber;      // Sequence number
   uint8_t ch1, ch2, ch3, ch4;  // Outputs
-  uint16_t itNumber; // Iteration number
 } esp32MasterMessage_t;
 
 esp32MasterMessage_t incomingMessage;  //Storage for struct
@@ -97,7 +95,7 @@ void dataReceive(const esp_now_recv_info_t *recvInfo, const uint8_t *incomingDat
   ch4Output = incomingMessage.ch4;
   itNumber = incomingMessage.itNumber;
 
-  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d, PackageNumber=%d, iteration number=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output, lastPackageNumber, itNumber);
+  Serial.printf("Sync: Offset=%d µs, ch1=%d, ch2=%d, ch3=%d, ch4=%d, PackageNumber=%d\n", slaveTimeOffset, ch1Output, ch2Output, ch3Output, ch4Output, lastPackageNumber);
 }
 
 void setup() {
