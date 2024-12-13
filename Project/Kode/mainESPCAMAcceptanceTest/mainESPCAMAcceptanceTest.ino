@@ -38,7 +38,7 @@ esp_now_peer_info_t peerInfo;  // Store information about peer
 #include "driver/rtc_io.h"
 #include <EEPROM.h>  // Read and write from flash memory
 
-String testImageFileName = "/picture76Tester.jpg";  // Path to image on the SD card
+String testImageFileName = "/picture5.jpg";  // Path to image on the SD card
 
 // Image dimensions
 const int imgWidth = 160;
@@ -191,22 +191,20 @@ void setup() {
 
 
     finishTime = millis();
-    // Stack size monitoring
-    //printHeapInfo();
     timeSpent = finishTime - startTime;
     totalTime += timeSpent;
     averageTime = totalTime / testIteration;
-    Serial.print("Iteration number: ");
-    Serial.println(testIteration);
+    //Serial.print("Iteration number: ");
+    //Serial.println(testIteration);
     //Serial.print("Time spent this iteration: ");
     //Serial.println(timeSpent);
     //Serial.print("Average time spent: ");
     //Serial.println(averageTime);
     sendMessageReceiveACK();
-    delay(50);
+    //delay(50);
   }
-  Serial.print("Done testing! The average time spent to perform was: ");
-  Serial.println(averageTime);
+  //Serial.print("Done testing! The average time spent to perform was: ");
+  //Serial.println(averageTime);
 }
 void loop() {
 }
@@ -654,36 +652,36 @@ void analyzeMatrix(uint8_t **matrix) {
     //Serial.print(largestSize);
     //Serial.print(") Angle relative to centerline: ");
     //Serial.println(angle);
-    if (angle < 2.5 && angle > -2.5) {
+    if (angle ==0 ) {
       ch1Output = 10;
       ch2Output = 0;
       ch3Output = 15;
       ch4Output = 0;
-      Serial.println("Continue straight!");
-    } else if (angle > 2.5 && angle < 16) {
+      //Serial.println("Continue straight!");
+    } else if (angle >0 && angle < 16) {
       ch1Output = 26;
       ch2Output = 0;
       ch3Output = 15;
       ch4Output = 0;
-      Serial.println("Turn right!");
-    } else if (angle < -2.5 && angle > -16) {
+      //Serial.println("Turn right!");
+    } else if (angle < 0 && angle > -16) {
       ch1Output = 10;
       ch2Output = 0;
       ch3Output = 21;
       ch4Output = 0;
-      Serial.println("Turn left!");
+      //Serial.println("Turn left!");
     } else if (angle > 16) {
       ch1Output = 10;
       ch2Output = 0;
       ch3Output = 0;
       ch4Output = 15;
-      Serial.println("Rotate right!");
+      //Serial.println("Rotate right!");
     } else if (angle < -16) {
       ch1Output = 0;
       ch2Output = 10;
       ch3Output = 15;
       ch4Output = 0;
-      Serial.println("Rotate left!");
+      //Serial.println("Rotate left!");
     }
   }
 }
@@ -748,7 +746,7 @@ float calculateComponentAngle(uint8_t labelMatrix[downImgHeight][downImgWidth], 
   // Calculate centroid
   centroidX /= count;
   centroidY /= count;
-Serial.println(angleDegrees);/*
+Serial.println(angleDegrees);
   // Adjust angle based on centroid location
   if (centroidX < (downImgWidth / 2) && angleDegrees > 0) {
     //Serial.println("Nu skulle stregen komme fra venstre og køretøjet køre ligeud");
@@ -762,7 +760,7 @@ Serial.println(angleDegrees);/*
   } else if (centroidX > (downImgWidth / 2) && angleDegrees == 0) {
     //Serial.println("Nu skulle stregen komme fra venstre og køretøjet dreje til højre");
     angleDegrees = 5;  // Right half and negative angle
-  }*/
+  }
 
   return angleDegrees;
 }
@@ -830,15 +828,15 @@ void sendMessageReceiveACK() {
     if (result != ESP_OK) {
       Serial.println("Error sending the data");
     } else {
-      Serial.println("Sent with success");
+      //Serial.println("Sent with success");
     }
 
-    delay(100);  // Wait for acknowledgment
+    //delay(100);  // Wait for acknowledgment
     if (ackReceived == true) break;
   }
 
   if (!ackReceived) {
-    Serial.printf("Failed to receive ACK for package %d\n", outgoingMessage.packageNumber);
+    //Serial.printf("Failed to receive ACK for package %d\n", outgoingMessage.packageNumber);
     //In the final program, the system should be halted by now, as data has been lost
   }
   /*
@@ -874,14 +872,14 @@ void receiveAck(const esp_now_recv_info *info, const uint8_t *data, int len) {
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            info->src_addr[0], info->src_addr[1], info->src_addr[2],
            info->src_addr[3], info->src_addr[4], info->src_addr[5]);
-  Serial.printf("ACK received from: %s\n", macStr);
+  //Serial.printf("ACK received from: %s\n", macStr);
   //Serial.println(outgoingMessage.packageNumber);
   //Serial.println(packageNumber);
   // Verify the package number in the ACK
   //memcpy(&outgoingMessage, data, sizeof(outgoingMessage));
   if (outgoingMessage.packageNumber == testIteration) {
     ackReceived = true;
-    Serial.printf("ACK received for package %d\n", outgoingMessage.packageNumber);
+    //Serial.printf("ACK received for package %d\n", outgoingMessage.packageNumber);
   }
 }
 
