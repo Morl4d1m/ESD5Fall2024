@@ -153,10 +153,10 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w = 0; w < 100; w++) {  // I know this is cursed, but it works, and adding the functions to loop does not ¯\_(ツ)_/¯
+  for (uint16_t w = 0; w < 10000; w++) {  // I know this is cursed, but it works, and adding the functions to loop does not ¯\_(ツ)_/¯
     testIteration++;
     // Stack size monitoring
-    printHeapInfo();
+    //printHeapInfo();
     startTime = millis();
 
     //Take and Save Photo
@@ -164,7 +164,7 @@ void setup() {
     //Serial.println("Photo taken?");
 
     // Read and display the grayscale image
-    readGrayscaleImageFromSD(testImageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
+    readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
     //displayMatrix(grayscaleMatrix);
     //Serial.println("Grayscale");
     gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);  // Gaussian blurring
@@ -177,10 +177,10 @@ void setup() {
     //displayMatrix(hSobelMatrix);
     //Serial.println("hSobel");
     sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);               // Sum sobel operator into 1 image
-    applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection
-    //Serial.println("sumSobel");
+    applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection 
+
     //displayMatrix(sumSobelMatrix);
-    Serial.println();
+    //Serial.println();
     // Display the edge-detected matrix
     //displayMatrix(edgeMatrix);
     downsampleFromCenterAndTop(edgeMatrix, downsampledMatrix);
@@ -198,11 +198,11 @@ void setup() {
     averageTime = totalTime / testIteration;
     Serial.print("Iteration number: ");
     Serial.println(testIteration);
-    Serial.print("Time spent this iteration: ");
-    Serial.println(timeSpent);
-    Serial.print("Average time spent: ");
-    Serial.println(averageTime);
-    //sendMessageReceiveACK();
+    //Serial.print("Time spent this iteration: ");
+    //Serial.println(timeSpent);
+    //Serial.print("Average time spent: ");
+    //Serial.println(averageTime);
+    sendMessageReceiveACK();
     delay(50);
   }
   Serial.print("Done testing! The average time spent to perform was: ");
@@ -615,81 +615,108 @@ void sumSobel(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint8_t **hSobe
 }
 
 void analyzeMatrix(uint8_t **matrix) {
-  int labelMatrix[downImgHeight][downImgWidth] = { 0 };  // Label matrix
-  int label = 1;                                         // Start labeling components from 1
+  uint8_t labelMatrix[downImgHeight][downImgWidth] = { 0 };  // Label matrix
+  uint8_t label = 1;                                         // Start labeling components from 1
+  uint8_t componentSizes[downImgHeight * downImgWidth] = { 0 }; // Array to store sizes of components
 
   // Direction arrays for 8-connectivity
-  int dr[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
-  int dc[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
+  uint8_t dr[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
+  uint8_t dc[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
 
   // Label connected components
-  for (int r = 0; r < downImgHeight; r++) {
-    for (int c = 0; c < downImgWidth; c++) {
+  for (uint8_t r = 0; r < downImgHeight; r++) {
+    for (uint8_t c = 0; c < downImgWidth; c++) {
       if (matrix[r][c] == 255 && labelMatrix[r][c] == 0) {
-        // Perform flood fill
-        floodFill(matrix, labelMatrix, r, c, label, dr, dc);
+        // Perform flood fill and store size
+        uint8_t size = floodFill(matrix, labelMatrix, r, c, label, dr, dc);
+        componentSizes[label] = size;
         label++;
       }
     }
   }
 
-  // Calculate angle for each component
-  for (int l = 100; l < label; l++) {
-    float angle = calculateComponentAngle(labelMatrix, l);
-    Serial.print("Component ");
-    Serial.print(l);
-    Serial.print(" Angle relative to centerline: ");
-    Serial.println(angle);
+   // Find the largest component
+  uint8_t largestLabel = 0;
+  uint8_t largestSize = 0;
+  for (uint8_t l = 1; l < label; l++) {
+    if (componentSizes[l] > largestSize) {
+      largestSize = componentSizes[l];
+      largestLabel = l;
+    }
+  }
+
+  // Process only the largest component
+  if (largestLabel > 0) {
+    float angle = calculateComponentAngle(labelMatrix, largestLabel);
+    //Serial.print("Component ");
+    //Serial.print(largestLabel);
+    //Serial.print(" (Size: ");
+    //Serial.print(largestSize);
+    //Serial.print(") Angle relative to centerline: ");
+    //Serial.println(angle);
     if (angle < 2.5 && angle > -2.5) {
-      ch1Output = 53;
-      ch3Output = 53;
+      ch1Output = 10;
+      ch2Output = 0;
+      ch3Output = 15;
+      ch4Output = 0;
       Serial.println("Continue straight!");
     } else if (angle > 2.5 && angle < 16) {
-      ch1Output = 60;
-      ch3Output = 29;
+      ch1Output = 26;
+      ch2Output = 0;
+      ch3Output = 15;
+      ch4Output = 0;
       Serial.println("Turn right!");
     } else if (angle < -2.5 && angle > -16) {
-      ch1Output = 29;
-      ch3Output = 60;
+      ch1Output = 10;
+      ch2Output = 0;
+      ch3Output = 21;
+      ch4Output = 0;
       Serial.println("Turn left!");
     } else if (angle > 16) {
-      ch1Output = 99;
-      ch4Output = 99;
+      ch1Output = 10;
+      ch2Output = 0;
+      ch3Output = 0;
+      ch4Output = 15;
       Serial.println("Rotate right!");
     } else if (angle < -16) {
-      ch2Output = 99;
-      ch3Output = 99;
+      ch1Output = 0;
+      ch2Output = 10;
+      ch3Output = 15;
+      ch4Output = 0;
       Serial.println("Rotate left!");
     }
   }
 }
 
-// Recursive flood-fill to label connected components
-void floodFill(uint8_t **matrix, int labelMatrix[downImgHeight][downImgWidth], int r, int c, int label, int dr[], int dc[]) {
-  if (r < 0 || r >= downImgHeight || c < 0 || c >= downImgWidth) return;  // Out of bounds
-  if (matrix[r][c] == 0 || labelMatrix[r][c] != 0) return;                // Not part of the component or already labeled
+// Recursive flood-fill to label connected components and calculate size
+int floodFill(uint8_t **matrix, uint8_t labelMatrix[downImgHeight][downImgWidth], uint8_t r, uint8_t c, uint8_t label, uint8_t dr[], uint8_t dc[]) {
+  if (r < 0 || r >= downImgHeight || c < 0 || c >= downImgWidth) return 0;  // Out of bounds
+  if (matrix[r][c] == 0 || labelMatrix[r][c] != 0) return 0;                // Not part of the component or already labeled
 
   labelMatrix[r][c] = label;
+  uint8_t size = 1;  // Current cell counts as 1
 
   // Visit all 8 neighbors
-  for (int d = 0; d < 8; d++) {
-    floodFill(matrix, labelMatrix, r + dr[d], c + dc[d], label, dr, dc);
+  for (uint8_t d = 0; d < 8; d++) {
+    size += floodFill(matrix, labelMatrix, r + dr[d], c + dc[d], label, dr, dc);
   }
+
+  return size;
 }
 
 // Function to calculate the angle of a component relative to the centerline
-float calculateComponentAngle(int labelMatrix[downImgHeight][downImgWidth], int label) {
+float calculateComponentAngle(uint8_t labelMatrix[downImgHeight][downImgWidth], uint8_t label) {
   float sumX = 0, sumY = 0;
   float sumX2 = 0, sumY2 = 0, sumXY = 0;
-  int count = 0;
+  uint8_t count = 0;
 
   // Compute moments
-  for (int r = 0; r < downImgHeight; r++) {
-    for (int c = 0; c < downImgWidth; c++) {
+  for (uint8_t r = 0; r < downImgHeight; r++) {
+    for (uint8_t c = 0; c < downImgWidth; c++) {
       if (labelMatrix[r][c] == label) {
         // Shift coordinates relative to center column
-        int x = c - 8;  // x relative to center column
-        int y = -r;     // y relative to top row, inverted for standard coordinates
+        uint8_t x = c - 8;  // x relative to center column
+        uint8_t y = -r;     // y relative to top row, inverted for standard coordinates
 
         sumX += x;
         sumY += y;
@@ -721,15 +748,19 @@ float calculateComponentAngle(int labelMatrix[downImgHeight][downImgWidth], int 
   // Calculate centroid
   centroidX /= count;
   centroidY /= count;
-
+Serial.println(angleDegrees);/*
   // Adjust angle based on centroid location
-  /*if (centroidX < (downImgWidth / 2) && angleDegrees > 0) {
+  if (centroidX < (downImgWidth / 2) && angleDegrees > 0) {
+    //Serial.println("Nu skulle stregen komme fra venstre og køretøjet køre ligeud");
     angleDegrees = 0;  // Left half and positive angle
   } else if (centroidX > (downImgWidth / 2) && angleDegrees < 0) {
+    //Serial.println("Nu skulle stregen komme fra højre og køretøjet køre ligeud");
     angleDegrees = 0;  // Right half and negative angle
   } else if (centroidX < (downImgWidth / 2) && angleDegrees == 0) {
+    //Serial.println("Nu skulle stregen komme fra venstre og køretøjet dreje til venstre");
     angleDegrees = -5;  // Left half and negative angle
   } else if (centroidX > (downImgWidth / 2) && angleDegrees == 0) {
+    //Serial.println("Nu skulle stregen komme fra venstre og køretøjet dreje til højre");
     angleDegrees = 5;  // Right half and negative angle
   }*/
 
