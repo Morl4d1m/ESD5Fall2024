@@ -653,33 +653,33 @@ void analyzeMatrix(uint8_t **matrix) {
     //Serial.print(") Angle relative to centerline: ");
     //Serial.println(angle);
     if (angle ==0 ) {
-      ch1Output = 10;
+      ch1Output = 51;
       ch2Output = 0;
-      ch3Output = 15;
+      ch3Output = 55;
       ch4Output = 0;
       //Serial.println("Continue straight!");
     } else if (angle >0 && angle < 16) {
-      ch1Output = 26;
+      ch1Output = 60;
       ch2Output = 0;
-      ch3Output = 15;
+      ch3Output = 29;
       ch4Output = 0;
       //Serial.println("Turn right!");
     } else if (angle < 0 && angle > -16) {
-      ch1Output = 10;
+      ch1Output = 29;
       ch2Output = 0;
-      ch3Output = 21;
+      ch3Output = 60;
       ch4Output = 0;
       //Serial.println("Turn left!");
     } else if (angle > 16) {
-      ch1Output = 10;
+      ch1Output = 53;
       ch2Output = 0;
       ch3Output = 0;
-      ch4Output = 15;
+      ch4Output = 53;
       //Serial.println("Rotate right!");
     } else if (angle < -16) {
       ch1Output = 0;
-      ch2Output = 10;
-      ch3Output = 15;
+      ch2Output = 53;
+      ch3Output = 53;
       ch4Output = 0;
       //Serial.println("Rotate left!");
     }
