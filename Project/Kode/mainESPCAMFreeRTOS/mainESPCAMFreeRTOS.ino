@@ -173,7 +173,7 @@ void setup() {
 
   xTaskCreate(MyIdleTask, "IdleTask", 1000, NULL, 0, NULL);
   xTaskCreate(CannyEdge, "Canny Edge Algorithm", 10000, NULL, 1, &hdlCannyEdge);
-  xTaskCreate(ComputeControlSignal, "Compute Control Signal Algorithm", 10000, NULL, 1, &hdlComputeControlSignal);
+  xTaskCreate(ComputeControlSignal, "Compute Control Signal Algorithm", 15000, NULL, 1, &hdlComputeControlSignal);
   xTaskCreate(sendMessageToESP32, "Send Data To ESP32 Protocol", 5000, NULL, 1, &hdlSendMessageToESP32);
 
   /*
@@ -238,6 +238,7 @@ void loop() {
 // FreeRTOS task for Canny Edge Algorithm
 static void CannyEdge(void *pvParameters) {
   while (1) {
+    takeSavePhoto();
     Serial.println(" ");
     Serial.println("Canny edge algorithm");
     // Read and display the grayscale image
