@@ -238,6 +238,7 @@ void loop() {
 // FreeRTOS task for Canny Edge Algorithm
 static void CannyEdge(void *pvParameters) {
   while (1) {
+    Serial.println(" ");
     Serial.println("Canny edge algorithm");
     // Read and display the grayscale image
     readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
@@ -258,6 +259,7 @@ static void CannyEdge(void *pvParameters) {
     testIteration++;
     Serial.print("Iteration number: ");
     Serial.println(testIteration);
+  printHeapInfo();
   }
 }
 
