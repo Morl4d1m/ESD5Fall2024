@@ -1,3 +1,12 @@
+//Stuff for FreeRTOS
+#include <freertos/FreeRTOS.h>  // Necessary for accessing FreeRTOS
+#include <freertos/task.h>      // Necessary for using tasks in FreeRTOS
+#include <freertos/semphr.h>    // Enables semaphores
+#define INCLUDE_vTaskSuspend 1  // Definition of suspend function being active
+#define configCHECK_FOR_STACK_OVERFLOW 1  // Checks whether or not stack overflow occurs
+TaskHandle_t hdlCannyEdge, hdlComputeControlSignal, hdlSendMessageToESP32;
+SemaphoreHandle_t avgSem, Mutex;  // Creation of semaphore handles
+
 //Stuff for ESP-NOW communication
 #include <esp_now.h>
 #include <WiFi.h>
@@ -94,6 +103,15 @@ const int scale = 5;  // Downsampling factor
 const int downImgHeight = imgHeight / scale;
 const int downImgWidth = imgWidth / scale;
 
+// Making the matrices global:
+uint8_t **grayscaleMatrix;
+uint8_t **gaussBlurMatrix;
+uint8_t **vSobelMatrix;
+uint8_t **hSobelMatrix;
+uint8_t **sumSobelMatrix;
+uint8_t **edgeMatrix;
+uint8_t **downsampledMatrix;
+
 // Variables for timing functions:
 uint32_t startTime = 0;
 uint32_t currentTime = 0;
@@ -139,20 +157,26 @@ void setup() {
   printHeapInfo();
 
   // Initialize all matrices
-  uint8_t **grayscaleMatrix = initializeMatrix(imgWidth, imgHeight, "grayscaleMatrix");
-  uint8_t **gaussBlurMatrix = initializeMatrix(imgWidth, imgHeight, "gaussBlurMatrix");
-  uint8_t **vSobelMatrix = initializeMatrix(imgWidth, imgHeight, "vSobelMatrix");
-  uint8_t **hSobelMatrix = initializeMatrix(imgWidth, imgHeight, "hSobelMatrix");
-  uint8_t **sumSobelMatrix = initializeMatrix(imgWidth, imgHeight, "sumSobelMatrix");
-  uint8_t **edgeMatrix = initializeMatrix(imgWidth, imgHeight, "edgeMatrix");
-  uint8_t **downsampledMatrix = initializeMatrix(downImgWidth, downImgHeight, "downsampledMatrix");
+  grayscaleMatrix = initializeMatrix(imgWidth, imgHeight, "grayscaleMatrix");
+  gaussBlurMatrix = initializeMatrix(imgWidth, imgHeight, "gaussBlurMatrix");
+  vSobelMatrix = initializeMatrix(imgWidth, imgHeight, "vSobelMatrix");
+  hSobelMatrix = initializeMatrix(imgWidth, imgHeight, "hSobelMatrix");
+  sumSobelMatrix = initializeMatrix(imgWidth, imgHeight, "sumSobelMatrix");
+  edgeMatrix = initializeMatrix(imgWidth, imgHeight, "edgeMatrix");
+  downsampledMatrix = initializeMatrix(downImgWidth, downImgHeight, "downsampledMatrix");
 
   if (!grayscaleMatrix || !gaussBlurMatrix || !vSobelMatrix || !hSobelMatrix || !sumSobelMatrix || !edgeMatrix) {
     Serial.println("Matrix initialization failed!");
     return;
   }
-
   Serial.println("All matrices initialized successfully.");
+
+  xTaskCreate(MyIdleTask, "IdleTask", 1000, NULL, 0, NULL);
+  xTaskCreate(CannyEdge, "Canny Edge Algorithm", 10000, NULL, 1, &hdlCannyEdge);
+  xTaskCreate(ComputeControlSignal, "Compute Control Signal Algorithm", 10000, NULL, 1, &hdlComputeControlSignal);
+  xTaskCreate(sendMessageToESP32, "Send Data To ESP32 Protocol", 5000, NULL, 1, &hdlSendMessageToESP32);
+
+  /*
   for (uint16_t w = 0; w < 10000; w++) {  // I know this is cursed, but it works, and adding the functions to loop does not ¯\_(ツ)_/¯
     testIteration++;
     // Stack size monitoring
@@ -177,7 +201,7 @@ void setup() {
     //displayMatrix(hSobelMatrix);
     //Serial.println("hSobel");
     sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);               // Sum sobel operator into 1 image
-    applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection 
+    applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection
 
     //displayMatrix(sumSobelMatrix);
     //Serial.println();
@@ -203,11 +227,57 @@ void setup() {
     sendMessageReceiveACK();
     //delay(50);
   }
+    */
   //Serial.print("Done testing! The average time spent to perform was: ");
   //Serial.println(averageTime);
 }
+
 void loop() {
 }
+
+// FreeRTOS task for Canny Edge Algorithm
+static void CannyEdge(void *pvParameters) {
+  while (1) {
+    Serial.println("Canny edge algorithm");
+    // Read and display the grayscale image
+    readGrayscaleImageFromSD(imageFileName, grayscaleMatrix);  // Read image and convert to 8bit grayscale
+    //displayMatrix(grayscaleMatrix);
+    //Serial.println("Grayscale");
+    gaussBlurOperator(grayscaleMatrix, gaussBlurMatrix);  // Gaussian blurring
+    //displayMatrix(gaussBlurMatrix);
+    //Serial.println("Gauss");
+    verticalSobelOperator(gaussBlurMatrix, vSobelMatrix);  // Vertital sobel operation
+    //displayMatrix(vSobelMatrix);
+    //Serial.println("vSobel");
+    horizontalSobelOperator(gaussBlurMatrix, hSobelMatrix);  // Horizontal sobel operation
+    //displayMatrix(hSobelMatrix);
+    //Serial.println("hSobel");
+    sumSobel(grayscaleMatrix, vSobelMatrix, hSobelMatrix, sumSobelMatrix);               // Sum sobel operator into 1 image
+    applyDoubleThresholding(sumSobelMatrix, edgeMatrix, imgWidth, imgHeight, 100, 190);  // Perform edge detection
+    vTaskDelay(500 / portTICK_PERIOD_MS);                                                // Delay for 500 milliseconds
+    testIteration++;
+    Serial.print("Iteration number: ");
+    Serial.println(testIteration);
+  }
+}
+
+static void ComputeControlSignal(void *pvParameters) {
+  while (1) {
+    Serial.println("Compute Control Signal Algorithm");
+    downsampleFromCenterAndTop(edgeMatrix, downsampledMatrix);
+    analyzeMatrix(downsampledMatrix);
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+  }
+}
+
+static void sendMessageToESP32(void *pvParameters) {
+  while (1) {
+    Serial.println("Send Message to ESP32");
+    sendMessageReceiveACK();
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+  }
+}
+
 
 void configInitCamera() {
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -613,9 +683,9 @@ void sumSobel(uint8_t **grayscaleMatrix, uint8_t **vSobelMatrix, uint8_t **hSobe
 }
 
 void analyzeMatrix(uint8_t **matrix) {
-  uint8_t labelMatrix[downImgHeight][downImgWidth] = { 0 };  // Label matrix
-  uint8_t label = 1;                                         // Start labeling components from 1
-  uint8_t componentSizes[downImgHeight * downImgWidth] = { 0 }; // Array to store sizes of components
+  uint8_t labelMatrix[downImgHeight][downImgWidth] = { 0 };      // Label matrix
+  uint8_t label = 1;                                             // Start labeling components from 1
+  uint8_t componentSizes[downImgHeight * downImgWidth] = { 0 };  // Array to store sizes of components
 
   // Direction arrays for 8-connectivity
   uint8_t dr[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
@@ -633,7 +703,7 @@ void analyzeMatrix(uint8_t **matrix) {
     }
   }
 
-   // Find the largest component
+  // Find the largest component
   uint8_t largestLabel = 0;
   uint8_t largestSize = 0;
   for (uint8_t l = 1; l < label; l++) {
@@ -652,13 +722,13 @@ void analyzeMatrix(uint8_t **matrix) {
     //Serial.print(largestSize);
     //Serial.print(") Angle relative to centerline: ");
     //Serial.println(angle);
-    if (angle ==0 ) {
+    if (angle == 0) {
       ch1Output = 51;
       ch2Output = 0;
       ch3Output = 55;
       ch4Output = 0;
       //Serial.println("Continue straight!");
-    } else if (angle >0 && angle < 16) {
+    } else if (angle > 0 && angle < 16) {
       ch1Output = 60;
       ch2Output = 0;
       ch3Output = 29;
@@ -746,7 +816,7 @@ float calculateComponentAngle(uint8_t labelMatrix[downImgHeight][downImgWidth], 
   // Calculate centroid
   centroidX /= count;
   centroidY /= count;
-Serial.println(angleDegrees);
+  Serial.println(angleDegrees);
   // Adjust angle based on centroid location
   if (centroidX < (downImgWidth / 2) && angleDegrees > 0) {
     //Serial.println("Nu skulle stregen komme fra venstre og køretøjet køre ligeud");
@@ -905,4 +975,11 @@ void printHeapInfo() {
   Serial.println(ESP.getFreeHeap());
   Serial.print("Free PSRAM: ");
   Serial.println(ESP.getFreePsram());
+}
+
+static void MyIdleTask(void *pvParameters) {
+  while (1) {
+    //Serial.println(F("Idle state"));
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+  }
 }

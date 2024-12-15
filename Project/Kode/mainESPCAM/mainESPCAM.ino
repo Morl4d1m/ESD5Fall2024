@@ -153,7 +153,7 @@ void setup() {
   }
 
   Serial.println("All matrices initialized successfully.");
-  for (int w = 0; w < 100; w++) {  // I know this is cursed, but it works, and adding the functions to loop does not ¯\_(ツ)_/¯
+  for (int w = 0; w < 10000; w++) {  // I know this is cursed, but it works, and adding the functions to loop does not ¯\_(ツ)_/¯
     testIteration++;
     // Stack size monitoring
     printHeapInfo();
@@ -202,7 +202,7 @@ void setup() {
     Serial.println(timeSpent);
     Serial.print("Average time spent: ");
     Serial.println(averageTime);
-    //sendMessageReceiveACK();
+    sendMessageReceiveACK();
     delay(50);
   }
   Serial.print("Done testing! The average time spent to perform was: ");
