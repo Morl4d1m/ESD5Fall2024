@@ -13,6 +13,9 @@ f_norm = frequencies / (fs / 2);
 % Design impulsresponsen med `fir2`
 h = fir2(N-1, f_norm, gains_linear);
 
+% Beregn frekvensrespons fra 0 til 2*pi (hele området)
+[H, omega] = freqz(h, 1, 1024, 'whole', fs);
+
 % Skab et grundsignal til test
 duration = 0.05; % Signalets varighed (kort for overskuelighed)
 x_noisy = generateNoisySignal(fs, duration);
