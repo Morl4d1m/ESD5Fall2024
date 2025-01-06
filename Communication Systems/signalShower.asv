@@ -1,0 +1,52 @@
+%% Signal Viewer Script
+% This script allows you to input a signal, specify a time window for viewing,
+% and define the sampling frequency. The selected portion of the signal is plotted.
+
+% Clear workspace and command window
+clear;
+clc;
+
+%% Input Parameters
+% Enter the signal as a mathematical function or a predefined vector
+% Example: @(t) sin(2*pi*10*t) for a 10 Hz sine wave
+signal_function = @(t) sin(2*pi*4000*t) + 0.5*cos(2*pi*8000*t); % Define the signal
+
+% Specify the total time duration for the signal
+signal_duration = 2; % Total signal duration in seconds
+
+% Sampling frequency (Hz)
+sampling_frequency = 1000; % Samples per second
+
+% Time window to view the signal
+view_start_time = 0; % Start time of the view window (seconds)
+view_end_time = 0.5; % End time of the view window (seconds)
+
+%% Signal Generation
+% Create a time vector for the full signal
+t = 0:1/sampling_frequency:signal_duration; % Time vector
+
+% Generate the signal using the input function
+y = signal_function(t);
+
+%% Select Signal for Viewing
+% Define indices for the view window
+view_indices = (t >= view_start_time) & (t <= view_end_time);
+
+% Extract the time and signal for the specified view window
+view_time = t(view_indices);
+view_signal = y(view_indices);
+
+%% Plot the Signal
+figure;
+plot(view_time, view_signal, 'b', 'LineWidth', 1.5);
+grid on;
+
+title('Selected Portion of the Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+legend('Signal');
+
+%% Notes:
+% 1. You can modify the signal_function variable to define different signals.
+% 2. Adjust view_start_time and view_end_time to inspect different parts of the signal.
+% 3. Ensure the sampling_frequency is high enough to satisfy the Nyquist criterion for your signal.
