@@ -1,0 +1,7 @@
+clear;
+for i=0:999;
+    omega(i+1)=pi*i/999;
+end;
+for i=1:1000;
+    v4=sqrt((cos(omega(i))+1)^2+(sin(omega(i)))^2);
+    v1=sqrt((cos(omega(i))+1)^2+(sin(omega(i)))^2);

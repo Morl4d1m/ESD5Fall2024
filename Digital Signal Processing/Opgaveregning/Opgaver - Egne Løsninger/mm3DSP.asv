@@ -1,0 +1,43 @@
+% Parametre
+T = 0.1; % Samplingstid (sekunder)
+b = [2, 4, 2]; % Tællerkoefficienter for H(z)
+a = [1, -1.6439, 0.6687]; % Nævnerkoefficienter for H(z)
+
+% Digitalt frekvensrespons
+[H_digital, omega] = freqz(b, a, 512); % Digitale frekvenser (normeret)
+
+% Omregning fra digitale til analoge frekvenser
+Omega = (2 / T) * tan(omega / 2); % Fra normeret frekvens til analog frekvens
+
+% Analytisk beregning af det analoge frekvensrespons
+H_analog = @(Omega) 2 * abs((1j * Omega + 1) .* (1j * Omega + 3));
+H_analog_vals = H_analog(Omega);
+
+% Plot begge frekvensresponser
+figure;
+
+% Digitalt frekvensrespons (plottet mod analog frekvensakse)
+subplot(2, 1, 1);
+plot(Omega, abs(H_digital), 'LineWidth', 1.5);
+title('Digitalt Frekvensrespons |H(e^{j\omega})|');
+xlabel('\Omega (rad/s)');
+ylabel('|H(e^{j\omega})|');
+grid on;
+
+% Analoge frekvensrespons
+subplot(2, 1, 2);
+plot(Omega, H_analog_vals, 'LineWidth', 1.5);
+title('Analogt Frekvensrespons |H(j\Omega)|');
+xlabel('\Omega (rad/s)');
+ylabel('|H(j\Omega)|');
+grid on;
+
+% Sammenligning
+figure;
+plot(Omega, abs(H_digital), 'b', 'LineWidth', 1.5); hold on;
+plot(Omega, H_analog_vals, 'r--', 'LineWidth', 1.5);
+title('Sammenligning af Frekvensresponser');
+xlabel('\Omega (rad/s)');
+ylabel('Amplitude');
+legend('|H(e^{j\omega})| (Digital)', '|H(j\Omega)| (Analog)');
+grid on;
